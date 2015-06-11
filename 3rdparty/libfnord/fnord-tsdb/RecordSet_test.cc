@@ -62,8 +62,8 @@ TEST_CASE(RecordSetTest, TestAddRowToEmptySet, [] () {
   EXPECT_TRUE(recset.getState().datafiles.empty());
   EXPECT_EQ(recset.getState().old_commitlogs.size(), 0);
 
-  recset.addRecord(0x42424242, testObject(schema, "1a", "1b"));
-  recset.addRecord(0x23232323, testObject(schema, "2a", "2b"));
+  recset.addRecord(SHA1::compute("0x42424242"), testObject(schema, "1a", "1b"));
+  recset.addRecord(SHA1::compute("0x23232323"), testObject(schema, "2a", "2b"));
 
   EXPECT_FALSE(recset.getState().commitlog.isEmpty());
   EXPECT_TRUE(recset.getState().commitlog_size > 0);
@@ -79,8 +79,8 @@ TEST_CASE(RecordSetTest, TestAddRowToEmptySet, [] () {
   EXPECT_EQ(recset.getState().old_commitlogs.size(), 1);
   EXPECT_EQ(recset.commitlogSize(), 2);
 
-  recset.addRecord(0x1211111, testObject(schema, "3a", "3b"));
-  recset.addRecord(0x2344444, testObject(schema, "4a", "4b"));
+  recset.addRecord(SHA1::compute("0x1211111"), testObject(schema, "3a", "3b"));
+  recset.addRecord(SHA1::compute("0x2344444"), testObject(schema, "4a", "4b"));
 
   EXPECT_FALSE(recset.getState().commitlog.isEmpty());
   EXPECT_TRUE(recset.getState().commitlog_size > 0);
@@ -123,8 +123,8 @@ TEST_CASE(RecordSetTest, TestCommitlogReopen, [] () {
 
   {
     RecordSet recset("/tmp/__fnord_testrecset");
-    recset.addRecord(0x42424242, testObject(schema, "1a", "1b"));
-    recset.addRecord(0x23232323, testObject(schema, "2a", "2b"));
+    recset.addRecord(SHA1::compute("0x42424242"), testObject(schema, "1a", "1b"));
+    recset.addRecord(SHA1::compute("0x23232323"), testObject(schema, "2a", "2b"));
     state = recset.getState();
   }
 
@@ -140,15 +140,15 @@ TEST_CASE(RecordSetTest, TestDuplicateRowsInCommitlog, [] () {
   auto schema = testSchema();
   RecordSet recset("/tmp/__fnord_testrecset");
 
-  recset.addRecord(0x42424242, testObject(schema, "1a", "1b"));
-  recset.addRecord(0x42424242, testObject(schema, "2a", "2b"));
+  recset.addRecord(SHA1::compute("0x42424242"), testObject(schema, "1a", "1b"));
+  recset.addRecord(SHA1::compute("0x42424242"), testObject(schema, "2a", "2b"));
   EXPECT_EQ(recset.commitlogSize(), 1);
 
   recset.rollCommitlog();
   EXPECT_EQ(recset.commitlogSize(), 1);
 
-  recset.addRecord(0x42424242, testObject(schema, "3a", "3b"));
-  recset.addRecord(0x32323232, testObject(schema, "2a", "2b"));
+  recset.addRecord(SHA1::compute("0x42424242"), testObject(schema, "3a", "3b"));
+  recset.addRecord(SHA1::compute("0x32323232"), testObject(schema, "2a", "2b"));
   EXPECT_EQ(recset.commitlogSize(), 2);
 
   recset.rollCommitlog();
@@ -157,21 +157,21 @@ TEST_CASE(RecordSetTest, TestDuplicateRowsInCommitlog, [] () {
 
   auto res = recset.listRecords();
   EXPECT_EQ(res.size(), 2);
-  EXPECT_EQ(res.count(0x42424242), 1);
-  EXPECT_EQ(res.count(0x32323232), 1);
+  EXPECT_EQ(res.count(SHA1::compute("x42424242")), 1);
+  EXPECT_EQ(res.count(SHA1::compute("x32323232")), 1);
 });
 
 TEST_CASE(RecordSetTest, TestCompactionWithExistingTable, [] () {
   auto schema = testSchema();
   RecordSet recset("/tmp/__fnord_testrecset");
 
-  recset.addRecord(0x42424242, testObject(schema, "1a", "1b"));
-  recset.addRecord(0x23232323, testObject(schema, "2a", "2b"));
+  recset.addRecord(SHA1::compute("0x42424242"), testObject(schema, "1a", "1b"));
+  recset.addRecord(SHA1::compute("0x23232323"), testObject(schema, "2a", "2b"));
   recset.rollCommitlog();
   recset.compact();
 
-  recset.addRecord(0x52525252, testObject(schema, "3a", "3b"));
-  recset.addRecord(0x12121212, testObject(schema, "4a", "4b"));
+  recset.addRecord(SHA1::compute("0x52525252"), testObject(schema, "3a", "3b"));
+  recset.addRecord(SHA1::compute("0x12121212"), testObject(schema, "4a", "4b"));
   recset.rollCommitlog();
   recset.compact();
   EXPECT_EQ(recset.commitlogSize(), 0);
@@ -179,10 +179,10 @@ TEST_CASE(RecordSetTest, TestCompactionWithExistingTable, [] () {
   auto msgids = recset.listRecords();
 
   EXPECT_EQ(msgids.size(), 4);
-  EXPECT_EQ(msgids.count(0x42424242), 1);
-  EXPECT_EQ(msgids.count(0x23232323), 1);
-  EXPECT_EQ(msgids.count(0x52525252), 1);
-  EXPECT_EQ(msgids.count(0x12121212), 1);
+  EXPECT_EQ(msgids.count(SHA1::compute("0x42424242")), 1);
+  EXPECT_EQ(msgids.count(SHA1::compute("0x23232323")), 1);
+  EXPECT_EQ(msgids.count(SHA1::compute("0x52525252")), 1);
+  EXPECT_EQ(msgids.count(SHA1::compute("0x12121212")), 1);
 });
 
 TEST_CASE(RecordSetTest, TestInsert10kRows, [] () {
