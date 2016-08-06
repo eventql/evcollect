@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = \
     . \
-    src
+    src/evcollect
 
 EXTRA_DIST =                             \
   doc                                    \
