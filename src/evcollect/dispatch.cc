@@ -24,6 +24,7 @@
 #include <string>
 #include <set>
 #include <evcollect/dispatch.h>
+#include <evcollect/plugin.h>
 #include <evcollect/util/logging.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -56,6 +57,11 @@ uint64_t getMonoTime() {
 
 }
 
+std::string mergeEvents(const std::string& base, const std::string& overlay) {
+  return overlay;
+}
+
+
 } // namespace
 
 namespace evcollect {
@@ -79,6 +85,12 @@ Dispatch::~Dispatch() {
 void Dispatch::addEventBinding(EventBinding* binding) {
   binding->next_tick = getMonoTime() + binding->interval_micros;
   queue_.insert(binding);
+}
+
+ReturnCode Dispatch::emitEvent(
+    EventBinding* binding,
+    const std::string& event_data) {
+  logInfo("EVENT: $0 => $1", binding->event_name, event_data);
 }
 
 ReturnCode Dispatch::run() {
@@ -150,7 +162,36 @@ ReturnCode Dispatch::run() {
 }
 
 ReturnCode Dispatch::runOnce(EventBinding* binding) {
-  logInfo("run: $0", binding->event_name);
+  std::string event_merged;
+  std::string event_buf;
+  for (const auto& src : binding->sources) {
+    while (src.plugin->pluginHasPendingEvent(binding, src.userdata)) {
+      event_buf.clear();
+      auto rc = src.plugin->pluginGetNextEvent(
+          binding,
+          src.userdata,
+          &event_buf);
+
+      if (!rc.isSuccess()) {
+        return rc;
+      }
+
+      if (binding->collapse_events) {
+        event_merged = mergeEvents(event_merged, event_buf);
+        break;
+      } else {
+        auto rc = emitEvent(binding, event_buf);
+        if (!rc.isSuccess()) {
+          return rc;
+        }
+      }
+    }
+  }
+
+  if (binding->collapse_events) {
+    emitEvent(binding, event_merged);
+  }
+
   return ReturnCode::success();
 }
 

@@ -28,6 +28,7 @@ namespace evcollect {
 class Dispatch;
 
 class SourcePlugin {
+public:
 
   virtual ~SourcePlugin() = default;
 

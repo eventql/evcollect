@@ -45,6 +45,7 @@ public:
 protected:
 
   ReturnCode runOnce(EventBinding* binding);
+  ReturnCode emitEvent(EventBinding* binding, const std::string& event_data);
 
   std::multiset<
       EventBinding*,
