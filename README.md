@@ -13,6 +13,40 @@ evcollect supports the following targets:
   - EventQL
   - Kafka
 
+## Example
+
+An example says more than a thousand words, so here is an illustrative evcollectd
+config:
+
+    # submit events to kafka
+    output kafka1 plugin kafka
+        host 127.0.0.1
+        port 1234
+
+    # submit events to eventql
+    output eventql1 plugin evenql
+        host 127.0.0.1
+        port 9175
+
+    # normal event containing system load statistics. submitted every 30s
+    event cluster.system_stats interval 30s
+       source plugin linux.systats
+
+    event cluster.app_stats 30s
+       source shell /usr/local/bin/app_stats.sh
+
+    # http access log. "streaming event" -- events submitted as they are written
+    event logs.access_log stream
+      source logfile /var/log/nginx/access.log
+
+
+Once we start evcollectd with the above config, this is what will happen:
+
+  - For each line in /var/log/nginx/access.log, evcollectd will emit a "logs.access_log" event
+  - Every 30s, evcollectd will emit a "cluster.system_stats" event containing system load statistics
+  - Every 30s, evcollectd will call the "app_stats.sh" shell script and emit the returned JSON event
+  - Every emitted event will be sent to kafka and eventql
+
 ## Building
 
 Before we can start we need to install some build dependencies. Currently
