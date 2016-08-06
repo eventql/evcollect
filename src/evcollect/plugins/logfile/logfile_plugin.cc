@@ -61,6 +61,7 @@ protected:
   size_t buf_len_;
   size_t buf_pos_;
   std::list<std::string> line_buf_;
+  uint64_t line_buf_maxsize_;
   ReturnCode readLines();
   bool readLine(int fd, std::string* line);
   bool readNextByte(int fd, char* target);
@@ -76,7 +77,8 @@ LogfileSource::LogfileSource(
     checkpoint_inode_(0),
     checkpoint_offset_(0),
     checkpoint_interval_micros_(10 * kMicrosPerSecond),
-    last_checkpoint_(0) {}
+    last_checkpoint_(0),
+    line_buf_maxsize_(8192) {}
 
 bool LogfileSource::hasNextLine() {
   if (line_buf_.empty()) {
@@ -165,7 +167,7 @@ ReturnCode LogfileSource::readLines() {
   buf_pos_ = 0;
 
   std::string line;
-  while (readLine(fd, &line)) {
+  while (readLine(fd, &line) && line_buf_.size() < line_buf_maxsize_) {
     line_buf_.push_back(line);
     offset_ += line.size();
   }
