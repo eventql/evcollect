@@ -22,7 +22,7 @@
  * code of your own applications
  */
 #include <sys/time.h>
-#include "eventql/util/wallclock.h"
+#include "wallclock.h"
 
 UnixTime WallClock::now() {
   return UnixTime(WallClock::getUnixMicros());
