@@ -203,7 +203,7 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
       event_buf.clear();
       {
         auto rc = src.plugin->pluginGetNextEvent(
-            binding,
+            src.userdata,
             &event_buf);
 
         if (!rc.isSuccess()) {

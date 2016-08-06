@@ -32,6 +32,13 @@ namespace plugin_logfile {
 class LogfileSourcePlugin : public SourcePlugin {
 public:
 
+  ReturnCode pluginAttach(
+      const PropertyList& config,
+      void** userdata) override;
+
+  void pluginDetach(
+      void* userdata) override;
+
   ReturnCode pluginGetNextEvent(
       void* userdata,
       std::string* event_json) override;

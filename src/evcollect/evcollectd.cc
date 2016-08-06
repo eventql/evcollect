@@ -194,7 +194,7 @@ int main(int argc, const char** argv) {
     conf.event_bindings.emplace_back();
     auto& b = conf.event_bindings.back();
     b.event_name = "logs.access_log";
-    b.interval_micros = 100000;
+    b.interval_micros = 1000000;
     b.sources.emplace_back();
     auto& s = b.sources.back();
     s.plugin_name = "logfile";

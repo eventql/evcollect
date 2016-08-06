@@ -52,9 +52,9 @@ public:
 
     va_list args;
     va_start(args, message);
-    int bufsize = vsnprintf(nullptr, 0, message, args);
-    rc.message_.reserve(bufsize + 1);
-    bufsize = vsnprintf(&rc.message_[0], rc.message_.capacity(), message, args);
+    int bufsize = 1024;//vsnprintf(nullptr, 0, message, args);
+    rc.message_.resize(bufsize + 1);
+    bufsize = vsnprintf(&rc.message_[0], rc.message_.size(), message, args);
     rc.message_.resize(bufsize);
     va_end(args);
 
