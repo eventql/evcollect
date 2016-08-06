@@ -34,6 +34,7 @@
 #include <evcollect/plugin.h>
 #include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
+#include <evcollect/config.h>
 #include <evcollect/plugins/hostname/hostname_plugin.h>
 
 using namespace evcollect;
@@ -175,25 +176,37 @@ int main(int argc, const char** argv) {
     return 0;
   }
 
+  /* load config */
+  ProcessConfig conf;
+
+  // tmp
+  {
+
+  }
+
+
   /* load plugins */
   PluginMap plugin_map;
   plugin_map.registerSourcePlugin(
       "hostname",
       std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
 
-  /* load config */
+  /* initialize event bindings */
   std::vector<std::unique_ptr<EventBinding>> event_bindings;
-  {
+  for (const auto& binding : conf.event_bindings) {
     auto ev_binding = new EventBinding();
-    ev_binding->event_name = "system.alive";
-    ev_binding->interval_micros = 1000000;
+    ev_binding->event_name = binding.event_name;
+    ev_binding->interval_micros = binding.interval_micros;
     ev_binding->collapse_events = true;
     event_bindings.emplace_back(ev_binding);
 
-    {
-      EventSourceBinding source;
+    for (const auto& source : binding.sources) {
+      EventSourceBinding ev_source;
       {
-        auto rc = plugin_map.getSourcePlugin("hostname", &source.plugin);
+        auto rc = plugin_map.getSourcePlugin(
+            source.plugin_name,
+            &ev_source.plugin);
+
         if (!rc.isSuccess()) {
           logFatal(rc.getMessage());
           return 1;
@@ -201,14 +214,17 @@ int main(int argc, const char** argv) {
       }
 
       {
-        auto rc = source.plugin->pluginAttach(ev_binding, &source.userdata);
+        auto rc = ev_source.plugin->pluginAttach(
+            ev_binding,
+            &ev_source.userdata);
+
         if (!rc.isSuccess()) {
           logFatal(rc.getMessage());
           return 1;
         }
       }
 
-      ev_binding->sources.emplace_back(source);
+      ev_binding->sources.emplace_back(ev_source);
     }
   }
 

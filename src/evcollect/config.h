@@ -24,26 +24,23 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <evcollect/evcollect.h>
 
 namespace evcollect {
 
-struct PropertyList {
-  std::vector<std::pair<std::string, std::string>> properties;
+struct EventSourceBindingConfig {
+  std::string plugin_name;
+  PropertyList properties;
 };
 
-class SourcePlugin;
-
-struct EventSourceBinding {
-  SourcePlugin* plugin;
-  void* userdata;
-};
-
-struct EventBinding {
+struct EventBindingConfig {
   std::string event_name;
   uint64_t interval_micros;
-  bool collapse_events;
-  std::vector<EventSourceBinding> sources;
-  uint64_t next_tick;
+  std::vector<EventSourceBindingConfig> sources;
+};
+
+struct ProcessConfig {
+  std::vector<EventBindingConfig> event_bindings;
 };
 
 } // namespace evcollect
