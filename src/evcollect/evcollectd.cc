@@ -30,6 +30,9 @@
 #include <sys/resource.h>
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
+#include <evcollect/evcollect.h>
+#include <evcollect/plugin.h>
+#include <evcollect/dispatch.h>
 
 ReturnCode daemonize();
 

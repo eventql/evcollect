@@ -23,21 +23,53 @@
  */
 #pragma once
 #include <string>
-#include <vector>
 
 namespace evcollect {
-class SourcePlugin;
+class Dispatch;
 
-struct EventSourceBinding {
-  SourcePlugin* plugin;
-  void** userdata;
-};
+class SourcePlugin {
 
-struct EventBinding {
-  std::string event_name;
-  uint64_t interval_micros;
-  bool collapse_events;
-  std::vector<EventSourceBinding> sources;
+  virtual ~SourcePlugin() = default;
+
+  /**
+   * Called when the daemon is started
+   */
+  virtual ReturnCode pluginInit();
+
+  /**
+   * Called when the daemon is stopped
+   */
+  virtual ReturnCode pluginFree();
+
+  /**
+   * Called for each event definition the plugin is attached to
+   */
+  virtual ReturnCode pluginAttach(
+      const EventBinding* event,
+      void** userdata);
+
+  /**
+   * Called for each event definition the plugin is detached from
+   */
+  virtual ReturnCode pluginDetach(
+      const EventBinding* event,
+      void* userdata);
+
+  /**
+   * Produce the next event
+   */
+  virtual ReturnCode pluginGetNextEvent(
+      const EventBinding* event,
+      void* userdata,
+      std::string* event_json);
+
+  /**
+   * Returns true if there are pending events, false otherwise
+   */
+  virtual bool pluginHasPendingEvent(
+      const EventBinding* event,
+      void* userdata);
+
 };
 
 } // namespace evcollect

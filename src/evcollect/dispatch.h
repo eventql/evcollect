@@ -23,21 +23,11 @@
  */
 #pragma once
 #include <string>
-#include <vector>
 
 namespace evcollect {
-class SourcePlugin;
 
-struct EventSourceBinding {
-  SourcePlugin* plugin;
-  void** userdata;
-};
+class Dispatch {
 
-struct EventBinding {
-  std::string event_name;
-  uint64_t interval_micros;
-  bool collapse_events;
-  std::vector<EventSourceBinding> sources;
 };
 
 } // namespace evcollect
