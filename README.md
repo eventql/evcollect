@@ -47,4 +47,25 @@ To build evcollect from a git checkout:
 
 ## Plugins
 
-
+<table>
+  <tr>
+    <th>Plugin Name</th>
+    <th>Defined Sensors</th>
+  <tr>
+  <tr>
+    <td valign="top">linux (<a href="">Example</a>)</td>
+    <td>
+      <ul>
+        <li>
+          <b>Sensor:</b> linux.sysstat
+          <ul>
+            <li>CPU Usage</li>
+            <li>Load</li>
+            <li>CPU Usage</li>
+            <li>CPU Usage</li>
+          </ul>
+        </li>
+      </ul>
+    </td>
+  </tr>
+</table>
