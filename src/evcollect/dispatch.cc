@@ -63,7 +63,8 @@ namespace evcollect {
 Dispatch::Dispatch() :
     queue_([] (EventBinding* a, EventBinding* b) {
       return a->next_tick < b->next_tick;
-    }) {
+    }),
+    listen_fd_(-1) {
   if (pipe(wakeup_pipe_) < 0) {
     logFatal("pipe() failed");
     abort();
@@ -93,6 +94,9 @@ ReturnCode Dispatch::run() {
     fd_set sleep_fdset;
     FD_ZERO(&sleep_fdset);
     FD_SET(wakeup_pipe_[0], &sleep_fdset);
+    if (listen_fd_ > 0) {
+      FD_SET(listen_fd_, &sleep_fdset);
+    }
 
     struct timeval sleep_tv;
     sleep_tv.tv_sec = sleep / 1000000;
@@ -108,6 +112,10 @@ ReturnCode Dispatch::run() {
     if (select_rc > 0) {
       if (FD_ISSET(wakeup_pipe_[0], &sleep_fdset)) {
         return ReturnCode::success();
+      }
+      if (listen_fd_ > 0 && FD_ISSET(listen_fd_, &sleep_fdset)) {
+        logInfo("Monitor attached");
+        continue;
       }
     }
 

@@ -50,6 +50,7 @@ protected:
       EventBinding*,
       std::function<bool (EventBinding*, EventBinding*)>> queue_;
 
+  int listen_fd_;
   int wakeup_pipe_[2];
 };
 
