@@ -224,7 +224,6 @@ ReturnCode LogfileSource::getNextEvent(std::string* event_json) {
 
       *event_json += "}";
     }
-
   } else {
     *event_json = StringUtil::format(
         R"({ "data": "$0" })",
