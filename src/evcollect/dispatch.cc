@@ -70,6 +70,11 @@ Dispatch::Dispatch() :
   }
 }
 
+Dispatch::~Dispatch() {
+  close(wakeup_pipe_[0]);
+  close(wakeup_pipe_[1]);
+}
+
 void Dispatch::addEventBinding(EventBinding* binding) {
   binding->next_tick = getMonoTime() + binding->interval_micros;
   queue_.insert(binding);

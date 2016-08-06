@@ -35,6 +35,7 @@ class Dispatch {
 public:
 
   Dispatch();
+  ~Dispatch();
 
   void addEventBinding(EventBinding* binding);
 

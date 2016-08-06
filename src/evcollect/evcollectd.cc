@@ -36,12 +36,15 @@
 
 using namespace evcollect;
 
+void shutdown(int);
 ReturnCode daemonize();
 
 static Dispatch* dispatch;
 
 int main(int argc, const char** argv) {
-  signal(SIGHUP, SIG_IGN);
+  signal(SIGTERM, shutdown);
+  signal(SIGINT, shutdown);
+  signal(SIGHUP, shutdown);
   signal(SIGPIPE, SIG_IGN);
 
   FlagParser flags;
@@ -222,6 +225,12 @@ int main(int argc, const char** argv) {
   //}
 
   return rc.isSuccess() ? 0 : 1;
+}
+
+void shutdown(int) {
+  if (dispatch) {
+    dispatch->kill();
+  }
 }
 
 ReturnCode daemonize() {
