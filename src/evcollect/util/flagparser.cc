@@ -188,6 +188,7 @@ ReturnCode FlagParser::parseArgv(const std::vector<std::string>& argv) {
     } else if (eq_len > 0) {
       if (arg.size() == eq_len) {
         return ReturnCode::error(
+            "FLAG_ERROR",
             "flag --%s=... has no value",
             flag_ptr->longopt);
       }
@@ -195,7 +196,10 @@ ReturnCode FlagParser::parseArgv(const std::vector<std::string>& argv) {
       flag_ptr->values.emplace_back(arg.substr(eq_len));
     } else {
       if (i + 1 >= argv.size()) {
-        return ReturnCode::error("flag --%s has no value", flag_ptr->longopt);
+        return ReturnCode::error(
+            "FLAG_ERROR",
+            "flag --%s has no value",
+            flag_ptr->longopt);
       }
 
       flag_ptr->values.emplace_back(argv[++i]);
@@ -204,7 +208,10 @@ ReturnCode FlagParser::parseArgv(const std::vector<std::string>& argv) {
 
   for (const auto& flag : flags_) {
     if (flag.required == true && flag.values.size() == 0) {
-      return ReturnCode::error("flag --%s is required", flag.longopt);
+      return ReturnCode::error(
+          "FLAG_ERROR",
+          "flag --%s is required",
+          flag.longopt);
     }
   }
 

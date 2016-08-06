@@ -31,6 +31,8 @@
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
 
+ReturnCode daemonize();
+
 int main(int argc, const char** argv) {
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
@@ -109,6 +111,7 @@ int main(int argc, const char** argv) {
       "don't log to stderr",
       "<switch>");
 
+  /* parse flags */
   {
     auto rc = flags.parseArgv(argc, argv);
     if (!rc.isSuccess()) {
@@ -117,18 +120,19 @@ int main(int argc, const char** argv) {
     }
   }
 
+  /* setup logging */
   if (!flags.isSet("nolog_to_stderr") && !flags.isSet("daemonize")) {
     Logger::logToStderr("evqld");
   }
 
-  //if (flags.isSet("log_to_syslog")) {
-  //  Application::logToSyslog("evqld");
-  //}
+  if (flags.isSet("log_to_syslog")) {
+    Logger::logToSyslog("evqld");
+  }
 
   Logger::get()->setMinimumLogLevel(
       strToLogLevel(flags.getString("loglevel")));
 
-  ///* print help */
+  /* print help */
   if (flags.isSet("help") || flags.isSet("version")) {
     std::cerr <<
         StringUtil::format(
@@ -159,10 +163,14 @@ int main(int argc, const char** argv) {
     return 0;
   }
 
-  ///* daemonize */
-  //if (process_config->getBool("server.daemonize")) {
-  //  Application::daemonize();
-  //}
+  /* daemonize */
+  if (flags.isSet("daemonize")) {
+    auto rc = daemonize();
+    if (!rc.isSuccess()) {
+      logFatal(rc.getMessage());
+      return 1;
+    }
+  }
 
   //ScopedPtr<FileLock> pidfile_lock;
   //if (process_config->hasProperty("server.pidfile")) {
@@ -177,7 +185,7 @@ int main(int argc, const char** argv) {
   //  pidfile.write(StringUtil::toString(getpid()));
   //}
 
-  //logInfo("eventql", "Exiting...");
+  logInfo("Exiting...");
 
   //if (pidfile_lock.get()) {
   //  pidfile_lock.reset(nullptr);
@@ -185,5 +193,26 @@ int main(int argc, const char** argv) {
   //}
 
   return 0;
+}
+
+ReturnCode daemonize() {
+#if defined(_WIN32)
+#error "Application::daemonize() not yet implemented for windows"
+
+#elif defined(__APPLE__) && defined(__MACH__)
+  // FIXME: deprecated on OSX
+  if (::daemon(true /*no chdir*/, true /*no close*/) < 0) {
+    return ReturnCode::error("INIT_FAIL", "daemon() failed");
+  }
+
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+  if (::daemon(true /*no chdir*/, true /*no close*/) < 0) {
+    return ReturnCode::error("INIT_FAIL", "daemon() failed");
+  }
+
+#else
+#error Unsupported OS
+#endif
+  return ReturnCode::success();
 }
 
