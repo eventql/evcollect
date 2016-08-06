@@ -13,6 +13,16 @@ evcollect supports the following targets:
   - EventQL
   - Kafka
 
+---
+
+#### Table of Contents:
+- [Example](#example)
+- [Building](#building)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Plugins](#plugins)
+- [Contributing](#contributing)
 
 ## Example
 
@@ -95,8 +105,6 @@ are emitted:
 
     $ evcollectctl monitor
 
-## Configuration
-
 ## Usage
 
 The evcollect distribution contains two binaries: `evcollectd` (the main
@@ -119,6 +127,7 @@ Connects to the main daemon process and lists all configured events and targets.
 Connects to the main daemon process and dumps all events to the console as they
 are emitted.
 
+## Configuration
 
 ## Plugins
 
@@ -144,3 +153,6 @@ are emitted.
     </td>
   </tr>
 </table>
+
+
+## Contributing
