@@ -136,11 +136,11 @@ int main(int argc, const char** argv) {
 
   /* setup logging */
   if (!flags.isSet("nolog_to_stderr") && !flags.isSet("daemonize")) {
-    Logger::logToStderr("evqld");
+    Logger::logToStderr("evcollectd");
   }
 
   if (flags.isSet("log_to_syslog")) {
-    Logger::logToSyslog("evqld");
+    Logger::logToSyslog("evcollectd");
   }
 
   Logger::get()->setMinimumLogLevel(
