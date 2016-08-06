@@ -23,6 +23,7 @@
  */
 #include <string>
 #include <vector>
+#include <assert.h>
 #include "flagparser.h"
 
 FlagParser::FlagParser() : ignore_unknown_(false) {}
@@ -57,87 +58,77 @@ bool FlagParser::isSet(const char* longopt) const {
   return false;
 }
 
-//std::string FlagParser::getString(const char* longopt) const {
-//  for (auto& flag : flags_) {
-//    if (flag.longopt == longopt) {
-//      if (flag.type != T_STRING) {
-//        RAISE(kFlagError, "flag '%s' is not a string", longopt);
-//      }
-//
-//      if (flag.values.size() == 0) {
-//        if (flag.default_value != nullptr) {
-//          return flag.default_value;
-//        }
-//
-//        RAISE(kFlagError, "flag '%s' is not set", longopt);
-//      }
-//
-//      return flag.values.back();
-//    }
-//  }
-//
-//  RAISE(kFlagError, "flag '%s' is not set", longopt);
-//}
-//
-//Vector<std::string> FlagParser::getStrings(const char* longopt) const {
-//  for (auto& flag : flags_) {
-//    if (flag.longopt == longopt) {
-//      if (flag.type != T_STRING) {
-//        RAISE(kFlagError, "flag '%s' is not a string", longopt);
-//      }
-//
-//      if (flag.values.size() == 0) {
-//        if (flag.default_value == nullptr) {
-//          return Vector<String>();
-//        } else {
-//          return Vector<String> { flag.default_value };
-//        }
-//      }
-//
-//      return flag.values;
-//    }
-//  }
-//
-//  return Vector<String>();
-//}
-//
-//int64_t FlagParser::getInt(const char* longopt) const {
-//  for (auto& flag : flags_) {
-//    if (flag.longopt == longopt) {
-//      if (flag.type != T_INTEGER) {
-//        RAISE(kFlagError, "flag '%s' is not an integer", longopt);
-//      }
-//
-//      std::string flag_value_str;
-//
-//      if (flag.values.size() == 0) {
-//        if (flag.default_value != nullptr) {
-//          flag_value_str = flag.default_value;
-//        } else {
-//          RAISE(kFlagError, "flag '%s' is not set", longopt);
-//        }
-//      } else {
-//        flag_value_str = flag.values.back();
-//      }
-//
-//      int64_t flag_value;
-//      try {
-//        flag_value = std::stoi(flag_value_str);
-//      } catch (std::exception e) {
-//        RAISE(
-//            kFlagError,
-//            "flag '%s' value '%s' is not a valid integer",
-//            longopt,
-//            flag.values.back().c_str());
-//      }
-//
-//      return flag_value;
-//    }
-//  }
-//
-//  RAISE(kFlagError, "flag '%s' is not set", longopt);
-//}
-//
+std::string FlagParser::getString(const char* longopt) const {
+  for (auto& flag : flags_) {
+    if (flag.longopt == longopt) {
+      assert(flag.type == T_STRING);
+
+      if (flag.values.size() == 0) {
+        if (flag.default_value != nullptr) {
+          return flag.default_value;
+        } else {
+          break;
+        }
+      }
+
+      return flag.values.back();
+    }
+  }
+
+  return "";
+}
+
+std::vector<std::string> FlagParser::getStrings(const char* longopt) const {
+  for (auto& flag : flags_) {
+    if (flag.longopt == longopt) {
+      assert(flag.type == T_STRING);
+
+      if (flag.values.size() == 0) {
+        if (flag.default_value == nullptr) {
+          return std::vector<std::string>();
+        } else {
+          return std::vector<std::string> { flag.default_value };
+        }
+      }
+
+      return flag.values;
+    }
+  }
+
+  return std::vector<std::string>();
+}
+
+int64_t FlagParser::getInt(const char* longopt) const {
+  for (auto& flag : flags_) {
+    if (flag.longopt == longopt) {
+      assert(flag.type == T_INTEGER);
+
+      std::string flag_value_str;
+
+      if (flag.values.size() == 0) {
+        if (flag.default_value != nullptr) {
+          flag_value_str = flag.default_value;
+        } else {
+          break;
+        }
+      } else {
+        flag_value_str = flag.values.back();
+      }
+
+      int64_t flag_value;
+      try {
+        flag_value = std::stoll(flag_value_str);
+      } catch (std::exception e) {
+        break;
+      }
+
+      return flag_value;
+    }
+  }
+
+  return 0;
+}
+
 ReturnCode FlagParser::parseArgv(int argc, const char** argv) {
   std::vector<std::string> args;
   for (int i = 1; i < argc; ++i) {

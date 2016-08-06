@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <regex>
+#include <iostream>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <evcollect/util/flagparser.h>
@@ -128,43 +129,35 @@ int main(int argc, const char** argv) {
       strToLogLevel(flags.getString("loglevel")));
 
   ///* print help */
-  //if (flags.isSet("help") || flags.isSet("version")) {
-  //  auto stdout_os = OutputStream::getStdout();
-  //  stdout_os->write(
-  //      StringUtil::format(
-  //          "EventQL $0 ($1)\n"
-  //          "Copyright (c) 2016, DeepCortex GmbH. All rights reserved.\n\n",
-  //          kVersionString,
-  //          kBuildID));
-  //}
+  if (flags.isSet("help") || flags.isSet("version")) {
+    std::cerr <<
+        StringUtil::format(
+            "evcollectd $0\n"
+            "Copyright (c) 2016, DeepCortex GmbH. All rights reserved.\n\n",
+            EVCOLLECT_VERSION);
+  }
 
-  //if (flags.isSet("version")) {
-  //  return 0;
-  //}
+  if (flags.isSet("version")) {
+    return 0;
+  }
 
-  //if (flags.isSet("help")) {
-  //  auto stdout_os = OutputStream::getStdout();
-  //  stdout_os->write(
-  //      "Usage: $ evqld [OPTIONS]\n\n"
-  //      "   -c, --config <file>       Load config from file\n"
-  //      "   -C name=value             Define a config value on the command line\n"
-  //      "   --standalone              Run in standalone mode\n"
-  //      "   --datadir <path>          Path to data directory\n"
-  //      "   --listen <host:port>      Listen on this address (default: localhost:9175)\n"
-  //      "   --daemonize               Daemonize the server\n"
-  //      "   --pidfile <file>          Write a PID file\n"
-  //      "   --loglevel <level>        Minimum log level (default: INFO)\n"
-  //      "   --[no]log_to_syslog       Do[n't] log to syslog\n"
-  //      "   --[no]log_to_stderr       Do[n't] log to stderr\n"
-  //      "   -?, --help                Display this help text and exit\n"
-  //      "   -v, --version             Display the version of this binary and exit\n"
-  //      "                                                       \n"
-  //      "Examples:                                              \n"
-  //      "   $ evqld --standalone --datadir /var/evql\n"
-  //      "   $ evqld -c /etc/evqld.conf --daemonize --pidfile /run/evql.pid\n"
-  //  );
-  //  return 0;
-  //}
+  if (flags.isSet("help")) {
+    std::cerr <<
+        "Usage: $ evcollectd [OPTIONS]\n\n"
+        "   -c, --config <file>       Load config from file\n"
+        "   --daemonize               Daemonize the server\n"
+        "   --pidfile <file>          Write a PID file\n"
+        "   --loglevel <level>        Minimum log level (default: INFO)\n"
+        "   --[no]log_to_syslog       Do[n't] log to syslog\n"
+        "   --[no]log_to_stderr       Do[n't] log to stderr\n"
+        "   -?, --help                Display this help text and exit\n"
+        "   -v, --version             Display the version of this binary and exit\n"
+        "                                                       \n"
+        "Examples:                                              \n"
+        "   $ evcollectd --daemonize --config /etc/evcollect.conf\n";
+
+    return 0;
+  }
 
   ///* daemonize */
   //if (process_config->getBool("server.daemonize")) {
@@ -191,6 +184,6 @@ int main(int argc, const char** argv) {
   //  FileUtil::rm(process_config->getString("server.pidfile").get());
   //}
 
-  //exit(0);
+  return 0;
 }
 
