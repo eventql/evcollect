@@ -55,6 +55,12 @@ evcollectd_SOURCES = \
     util/wallclock.cc \
     util/unix_time.h \
     util/unix_time.cc \
+    plugins/hostname/hostname_plugin.h \
+    plugins/hostname/hostname_plugin.cc \
+    plugin.h \
+    plugin.cc \
+    plugin_map.h \
+    plugin_map.cc \
     dispatch.h \
     dispatch.cc \
     evcollectd.cc

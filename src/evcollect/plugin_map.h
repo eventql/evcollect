@@ -23,55 +23,32 @@
  */
 #pragma once
 #include <string>
-#include <evcollect/evcollect.h>
+#include <unordered_map>
+#include <memory>
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
+class SourcePlugin;
 
-class SourcePlugin {
+class PluginMap {
 public:
 
-  virtual ~SourcePlugin() = default;
+  void registerSourcePlugin(
+      const std::string& plugin_name,
+      std::unique_ptr<SourcePlugin> plugin);
 
-  /**
-   * Called when the daemon is started
-   */
-  virtual ReturnCode pluginInit();
+  ReturnCode getSourcePlugin(
+      const std::string& plugin_name,
+      SourcePlugin** plugin) const;
 
-  /**
-   * Called when the daemon is stopped
-   */
-  virtual ReturnCode pluginFree();
+protected:
 
-  /**
-   * Called for each event definition the plugin is attached to
-   */
-  virtual ReturnCode pluginAttach(
-      const EventBinding* event,
-      void** userdata);
+  struct SourcePluginBinding {
+    std::unique_ptr<SourcePlugin> plugin;
+    bool plugin_initialized;
+  };
 
-  /**
-   * Called for each event definition the plugin is detached from
-   */
-  virtual ReturnCode pluginDetach(
-      const EventBinding* event,
-      void* userdata);
-
-  /**
-   * Produce the next event
-   */
-  virtual ReturnCode pluginGetNextEvent(
-      const EventBinding* event,
-      void* userdata,
-      std::string* event_json) = 0;
-
-  /**
-   * Returns true if there are pending events, false otherwise
-   */
-  virtual bool pluginHasPendingEvent(
-      const EventBinding* event,
-      void* userdata) = 0;
-
+  mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
 };
 
 } // namespace evcollect

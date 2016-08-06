@@ -21,57 +21,41 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#pragma once
-#include <string>
 #include <evcollect/evcollect.h>
-#include <evcollect/util/return_code.h>
+#include <evcollect/plugin_map.h>
+#include <evcollect/plugin.h>
 
 namespace evcollect {
 
-class SourcePlugin {
-public:
+void PluginMap::registerSourcePlugin(
+    const std::string& plugin_name,
+    std::unique_ptr<SourcePlugin> plugin) {
+  SourcePluginBinding plugin_binding;
+  plugin_binding.plugin = std::move(plugin);
+  plugin_binding.plugin_initialized = false;
+  source_plugins_.emplace(plugin_name, std::move(plugin_binding));
+}
 
-  virtual ~SourcePlugin() = default;
+ReturnCode PluginMap::getSourcePlugin(
+    const std::string& plugin_name,
+    SourcePlugin** plugin) const {
+  auto iter = source_plugins_.find(plugin_name);
+  if (iter == source_plugins_.end()) {
+    return ReturnCode::error("plugin not found: %s", plugin_name.c_str());
+  }
 
-  /**
-   * Called when the daemon is started
-   */
-  virtual ReturnCode pluginInit();
+  auto& plugin_iter = iter->second;
+  if (!plugin_iter.plugin_initialized) {
+    auto rc = plugin_iter.plugin->pluginInit();
+    if (!rc.isSuccess()) {
+      return rc;
+    }
 
-  /**
-   * Called when the daemon is stopped
-   */
-  virtual ReturnCode pluginFree();
+    plugin_iter.plugin_initialized = true;
+  }
 
-  /**
-   * Called for each event definition the plugin is attached to
-   */
-  virtual ReturnCode pluginAttach(
-      const EventBinding* event,
-      void** userdata);
-
-  /**
-   * Called for each event definition the plugin is detached from
-   */
-  virtual ReturnCode pluginDetach(
-      const EventBinding* event,
-      void* userdata);
-
-  /**
-   * Produce the next event
-   */
-  virtual ReturnCode pluginGetNextEvent(
-      const EventBinding* event,
-      void* userdata,
-      std::string* event_json) = 0;
-
-  /**
-   * Returns true if there are pending events, false otherwise
-   */
-  virtual bool pluginHasPendingEvent(
-      const EventBinding* event,
-      void* userdata) = 0;
-
-};
+  *plugin = plugin_iter.plugin.get();
+  return ReturnCode::success();
+}
 
 } // namespace evcollect

@@ -21,57 +21,29 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#pragma once
-#include <string>
-#include <evcollect/evcollect.h>
-#include <evcollect/util/return_code.h>
+#include <evcollect/plugin.h>
 
 namespace evcollect {
 
-class SourcePlugin {
-public:
+ReturnCode SourcePlugin::pluginInit() {
+  return ReturnCode::success();
+}
 
-  virtual ~SourcePlugin() = default;
+ReturnCode SourcePlugin::pluginFree() {
+  return ReturnCode::success();
+}
 
-  /**
-   * Called when the daemon is started
-   */
-  virtual ReturnCode pluginInit();
+ReturnCode SourcePlugin::pluginAttach(
+    const EventBinding* event,
+    void** userdata) {
+  *userdata = nullptr;
+  return ReturnCode::success();
+}
 
-  /**
-   * Called when the daemon is stopped
-   */
-  virtual ReturnCode pluginFree();
-
-  /**
-   * Called for each event definition the plugin is attached to
-   */
-  virtual ReturnCode pluginAttach(
-      const EventBinding* event,
-      void** userdata);
-
-  /**
-   * Called for each event definition the plugin is detached from
-   */
-  virtual ReturnCode pluginDetach(
-      const EventBinding* event,
-      void* userdata);
-
-  /**
-   * Produce the next event
-   */
-  virtual ReturnCode pluginGetNextEvent(
-      const EventBinding* event,
-      void* userdata,
-      std::string* event_json) = 0;
-
-  /**
-   * Returns true if there are pending events, false otherwise
-   */
-  virtual bool pluginHasPendingEvent(
-      const EventBinding* event,
-      void* userdata) = 0;
-
-};
+ReturnCode SourcePlugin::pluginDetach(
+    const EventBinding* event,
+    void* userdata) {
+  return ReturnCode::success();
+}
 
 } // namespace evcollect

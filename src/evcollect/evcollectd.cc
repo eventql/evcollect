@@ -32,7 +32,9 @@
 #include <evcollect/util/logging.h>
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin.h>
+#include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
+#include <evcollect/plugins/hostname/hostname_plugin.h>
 
 using namespace evcollect;
 
@@ -173,6 +175,22 @@ int main(int argc, const char** argv) {
     return 0;
   }
 
+  /* load plugins */
+  PluginMap plugin_map;
+  plugin_map.registerSourcePlugin(
+      "hostname",
+      std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
+
+  /* load config */
+  std::vector<std::unique_ptr<EventBinding>> event_bindings;
+  {
+    auto ev_binding = new EventBinding();
+    ev_binding->event_name = "system.alive";
+    ev_binding->interval_micros = 1000000;
+    ev_binding->collapse_events = true;
+    event_bindings.emplace_back(ev_binding);
+  }
+
   /* daemonize */
   if (flags.isSet("daemonize")) {
     auto rc = daemonize();
@@ -182,10 +200,7 @@ int main(int argc, const char** argv) {
     }
   }
 
-  dispatch = new Dispatch();
-  auto rc = ReturnCode::success();
-  std::vector<std::unique_ptr<EventBinding>> event_bindings;
-
+  /* write pidfile */
   //ScopedPtr<FileLock> pidfile_lock;
   //if (process_config->hasProperty("server.pidfile")) {
   //  auto pidfile_path = process_config->getString("server.pidfile").get();
@@ -199,16 +214,14 @@ int main(int argc, const char** argv) {
   //  pidfile.write(StringUtil::toString(getpid()));
   //}
 
-  {
-    auto ev_binding = new EventBinding();
-    ev_binding->event_name = "system.alive";
-    ev_binding->interval_micros = 1000000;
-    ev_binding->collapse_events = true;
-    dispatch->addEventBinding(ev_binding);
-    event_bindings.emplace_back(ev_binding);
+  /* main dispatch loop */
+  auto rc = ReturnCode::success();
+  logInfo("Starting with $0 event bindings", event_bindings.size());
+  dispatch = new Dispatch();
+  for (const auto& binding : event_bindings) {
+    dispatch->addEventBinding(binding.get());
   }
 
-  logInfo("Starting with $0 event bindings", event_bindings.size());
   if (rc.isSuccess()) {
     rc = dispatch->run();
     if (!rc.isSuccess()) {
@@ -216,6 +229,7 @@ int main(int argc, const char** argv) {
     }
   }
 
+  /* shutdown */
   logInfo("Exiting...");
   delete dispatch;
 
