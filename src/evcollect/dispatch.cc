@@ -84,9 +84,29 @@ ReturnCode Dispatch::run() {
     auto now = getMonoTime();
 
     auto job = *queue_.begin();
-    if (job->next_tick > now) {
+    while (job->next_tick > now) {
       auto sleep = job->next_tick - now;
-      usleep(sleep);
+
+      fd_set sleep_fdset;
+      FD_ZERO(&sleep_fdset);
+      FD_SET(wakeup_pipe_[0], &sleep_fdset);
+
+      struct timeval sleep_tv;
+      sleep_tv.tv_sec = sleep / 1000000;
+      sleep_tv.tv_usec = sleep % 1000000;
+
+      int select_rc = select(
+          wakeup_pipe_[0] + 1,
+          &sleep_fdset,
+          NULL,
+          NULL,
+          &sleep_tv);
+
+      if (select_rc > 0) {
+        return ReturnCode::success();
+      }
+
+      now = getMonoTime();
     }
 
     auto rc = runOnce(job);
@@ -99,6 +119,7 @@ ReturnCode Dispatch::run() {
 
     queue_.erase(queue_.begin());
 
+    now = getMonoTime();
     job->next_tick = job->next_tick + job->interval_micros;
     if (job->next_tick < now) {
       logWarning(
