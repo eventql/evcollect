@@ -34,7 +34,11 @@
 #include <evcollect/plugin.h>
 #include <evcollect/dispatch.h>
 
+using namespace evcollect;
+
 ReturnCode daemonize();
+
+static Dispatch* dispatch;
 
 int main(int argc, const char** argv) {
   signal(SIGHUP, SIG_IGN);
@@ -175,6 +179,10 @@ int main(int argc, const char** argv) {
     }
   }
 
+  dispatch = new Dispatch();
+  auto rc = ReturnCode::success();
+  std::vector<std::unique_ptr<EventBinding>> event_bindings;
+
   //ScopedPtr<FileLock> pidfile_lock;
   //if (process_config->hasProperty("server.pidfile")) {
   //  auto pidfile_path = process_config->getString("server.pidfile").get();
@@ -188,14 +196,32 @@ int main(int argc, const char** argv) {
   //  pidfile.write(StringUtil::toString(getpid()));
   //}
 
+  {
+    auto ev_binding = new EventBinding();
+    ev_binding->event_name = "system.alive";
+    ev_binding->interval_micros = 1000000;
+    ev_binding->collapse_events = true;
+    dispatch->addEventBinding(ev_binding);
+    event_bindings.emplace_back(ev_binding);
+  }
+
+  logInfo("Starting with $0 event bindings", event_bindings.size());
+  if (rc.isSuccess()) {
+    rc = dispatch->run();
+    if (!rc.isSuccess()) {
+      logFatal(rc.getMessage());
+    }
+  }
+
   logInfo("Exiting...");
+  delete dispatch;
 
   //if (pidfile_lock.get()) {
   //  pidfile_lock.reset(nullptr);
   //  FileUtil::rm(process_config->getString("server.pidfile").get());
   //}
 
-  return 0;
+  return rc.isSuccess() ? 0 : 1;
 }
 
 ReturnCode daemonize() {

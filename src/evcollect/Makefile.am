@@ -55,6 +55,8 @@ evcollectd_SOURCES = \
     util/wallclock.cc \
     util/unix_time.h \
     util/unix_time.cc \
+    dispatch.h \
+    dispatch.cc \
     evcollectd.cc
 
 bin_PROGRAMS += evcollectd

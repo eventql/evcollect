@@ -38,6 +38,7 @@ struct EventBinding {
   uint64_t interval_micros;
   bool collapse_events;
   std::vector<EventSourceBinding> sources;
+  uint64_t next_tick;
 };
 
 } // namespace evcollect

@@ -23,11 +23,33 @@
  */
 #pragma once
 #include <string>
+#include <set>
+#include <mutex>
+#include <condition_variable>
+#include <evcollect/evcollect.h>
+#include <evcollect/util/return_code.h>
 
 namespace evcollect {
 
 class Dispatch {
+public:
 
+  Dispatch();
+
+  void addEventBinding(EventBinding* binding);
+
+  ReturnCode run();
+  void kill();
+
+protected:
+
+  ReturnCode runOnce(EventBinding* binding);
+
+  std::multiset<
+      EventBinding*,
+      std::function<bool (EventBinding*, EventBinding*)>> queue_;
+
+  int wakeup_pipe_[2];
 };
 
 } // namespace evcollect
