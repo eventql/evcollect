@@ -191,6 +191,16 @@ int main(int argc, const char** argv) {
     event_bindings.emplace_back(ev_binding);
   }
 
+  for (auto& binding : event_bindings) {
+    for (auto& source : binding->sources) {
+      auto rc = source.plugin->pluginAttach(binding.get(), &source.userdata);
+      if (!rc.isSuccess()) {
+        logFatal(rc.getMessage());
+        return 1;
+      }
+    }
+  }
+
   /* daemonize */
   if (flags.isSet("daemonize")) {
     auto rc = daemonize();
@@ -231,6 +241,13 @@ int main(int argc, const char** argv) {
 
   /* shutdown */
   logInfo("Exiting...");
+
+  for (auto& binding : event_bindings) {
+    for (auto& source : binding->sources) {
+      source.plugin->pluginDetach(binding.get(), source.userdata);
+    }
+  }
+
   delete dispatch;
 
   //if (pidfile_lock.get()) {

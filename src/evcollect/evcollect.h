@@ -30,7 +30,7 @@ class SourcePlugin;
 
 struct EventSourceBinding {
   SourcePlugin* plugin;
-  void** userdata;
+  void* userdata;
 };
 
 struct EventBinding {
