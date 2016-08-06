@@ -87,7 +87,7 @@ to get started:
 
 Now you can start the evcollect daemon:
 
-    $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
+    $ evcollectd --config /etc/evcollect.conf
 
 Note that we didn't pass the `--daemonize` flag so evcollect is running in the
 foregrund. Open a new terminal and type this command to see all events as they
