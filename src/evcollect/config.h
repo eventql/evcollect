@@ -39,8 +39,14 @@ struct EventBindingConfig {
   std::vector<EventSourceBindingConfig> sources;
 };
 
+struct TargetBindingConfig {
+  std::string plugin_name;
+  PropertyList properties;
+};
+
 struct ProcessConfig {
   std::vector<EventBindingConfig> event_bindings;
+  std::vector<TargetBindingConfig> target_bindings;
 };
 
 } // namespace evcollect

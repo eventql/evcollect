@@ -29,6 +29,7 @@
 
 namespace evcollect {
 class SourcePlugin;
+class OutputPlugin;
 
 class PluginMap {
 public:
@@ -43,6 +44,14 @@ public:
       const std::string& plugin_name,
       SourcePlugin** plugin) const;
 
+  void registerOutputPlugin(
+      const std::string& plugin_name,
+      std::unique_ptr<OutputPlugin> plugin);
+
+  ReturnCode getOutputPlugin(
+      const std::string& plugin_name,
+      OutputPlugin** plugin) const;
+
 protected:
 
   struct SourcePluginBinding {
@@ -50,7 +59,13 @@ protected:
     bool plugin_initialized;
   };
 
+  struct OutputPluginBinding {
+    std::unique_ptr<OutputPlugin> plugin;
+    bool plugin_initialized;
+  };
+
   mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
+  mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
 };
 
 } // namespace evcollect

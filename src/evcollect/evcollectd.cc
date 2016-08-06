@@ -190,16 +190,20 @@ int main(int argc, const char** argv) {
     s.plugin_name = "hostname";
   }
 
-
   /* load plugins */
-  PluginMap plugin_map;
-  plugin_map.registerSourcePlugin(
+  std::unique_ptr<PluginMap> plugin_map(new PluginMap());
+  plugin_map->registerSourcePlugin(
       "hostname",
       std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
 
   /* initialize event bindings */
+  auto rc = ReturnCode::success();
   std::vector<std::unique_ptr<EventBinding>> event_bindings;
   for (const auto& binding : conf.event_bindings) {
+    if (!rc.isSuccess()) {
+      break;
+    }
+
     auto ev_binding = new EventBinding();
     ev_binding->event_name = binding.event_name;
     ev_binding->interval_micros = binding.interval_micros;
@@ -208,39 +212,56 @@ int main(int argc, const char** argv) {
 
     for (const auto& source : binding.sources) {
       EventSourceBinding ev_source;
-      {
-        auto rc = plugin_map.getSourcePlugin(
-            source.plugin_name,
-            &ev_source.plugin);
+      rc = plugin_map->getSourcePlugin(
+          source.plugin_name,
+          &ev_source.plugin);
 
-        if (!rc.isSuccess()) {
-          logFatal(rc.getMessage());
-          return 1;
-        }
+      if (!rc.isSuccess()) {
+        break;
       }
 
-      {
-        auto rc = ev_source.plugin->pluginAttach(
-            source.properties,
-            &ev_source.userdata);
+      rc = ev_source.plugin->pluginAttach(
+          source.properties,
+          &ev_source.userdata);
 
-        if (!rc.isSuccess()) {
-          logFatal(rc.getMessage());
-          return 1;
-        }
+      if (!rc.isSuccess()) {
+        break;
       }
 
       ev_binding->sources.emplace_back(ev_source);
     }
   }
 
-  /* daemonize */
-  if (flags.isSet("daemonize")) {
-    auto rc = daemonize();
+  /* initialize target bindings */
+  std::vector<std::unique_ptr<TargetBinding>> target_bindings;
+  for (const auto& binding : conf.target_bindings) {
     if (!rc.isSuccess()) {
-      logFatal(rc.getMessage());
-      return 1;
+      break;
     }
+
+    auto trgt_binding = new TargetBinding();
+    target_bindings.emplace_back(trgt_binding);
+
+    rc = plugin_map->getOutputPlugin(
+        binding.plugin_name,
+        &trgt_binding->plugin);
+
+    if (!rc.isSuccess()) {
+      break;
+    }
+
+    rc = trgt_binding->plugin->pluginAttach(
+        binding.properties,
+        &trgt_binding->userdata);
+
+    if (!rc.isSuccess()) {
+      break;
+    }
+  }
+
+  /* daemonize */
+  if (rc.isSuccess() && flags.isSet("daemonize")) {
+    rc = daemonize();
   }
 
   /* write pidfile */
@@ -258,18 +279,21 @@ int main(int argc, const char** argv) {
   //}
 
   /* main dispatch loop */
-  auto rc = ReturnCode::success();
-  logInfo("Starting with $0 event bindings", event_bindings.size());
-  dispatch = new Dispatch();
-  for (const auto& binding : event_bindings) {
-    dispatch->addEventBinding(binding.get());
+  if (rc.isSuccess()) {
+    logInfo("Starting with $0 event bindings", event_bindings.size());
+    dispatch = new Dispatch();
+    for (const auto& binding : event_bindings) {
+      dispatch->addEventBinding(binding.get());
+    }
+    for (const auto& binding : target_bindings) {
+      dispatch->addTargetBinding(binding.get());
+    }
+
+    rc = dispatch->run();
   }
 
-  if (rc.isSuccess()) {
-    rc = dispatch->run();
-    if (!rc.isSuccess()) {
-      logFatal(rc.getMessage());
-    }
+  if (!rc.isSuccess()) {
+    logFatal(rc.getMessage());
   }
 
   /* shutdown */
@@ -281,7 +305,12 @@ int main(int argc, const char** argv) {
     }
   }
 
+  for (auto& binding : target_bindings) {
+    binding->plugin->pluginDetach(binding->userdata);
+  }
+
   delete dispatch;
+  plugin_map.reset(nullptr);
 
   //if (pidfile_lock.get()) {
   //  pidfile_lock.reset(nullptr);

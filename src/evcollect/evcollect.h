@@ -31,4 +31,10 @@ struct PropertyList {
   std::vector<std::pair<std::string, std::string>> properties;
 };
 
+struct EventData {
+  uint64_t time;
+  std::string event_name;
+  std::string event_data;
+};
+
 } // namespace evcollect

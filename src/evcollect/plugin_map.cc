@@ -51,7 +51,44 @@ ReturnCode PluginMap::getSourcePlugin(
     SourcePlugin** plugin) const {
   auto iter = source_plugins_.find(plugin_name);
   if (iter == source_plugins_.end()) {
-    return ReturnCode::error("plugin not found: %s", plugin_name.c_str());
+    return ReturnCode::error(
+        "PLUGIN_NOT_FOUND",
+        "plugin not found: %s",
+        plugin_name.c_str());
+  }
+
+  auto& plugin_iter = iter->second;
+  if (!plugin_iter.plugin_initialized) {
+    auto rc = plugin_iter.plugin->pluginInit();
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+
+    plugin_iter.plugin_initialized = true;
+  }
+
+  *plugin = plugin_iter.plugin.get();
+  return ReturnCode::success();
+}
+
+void PluginMap::registerOutputPlugin(
+    const std::string& plugin_name,
+    std::unique_ptr<OutputPlugin> plugin) {
+  OutputPluginBinding plugin_binding;
+  plugin_binding.plugin = std::move(plugin);
+  plugin_binding.plugin_initialized = false;
+  output_plugins_.emplace(plugin_name, std::move(plugin_binding));
+}
+
+ReturnCode PluginMap::getOutputPlugin(
+    const std::string& plugin_name,
+    OutputPlugin** plugin) const {
+  auto iter = output_plugins_.find(plugin_name);
+  if (iter == output_plugins_.end()) {
+    return ReturnCode::error(
+        "PLUGIN_NOT_FOUND",
+        "output plugin not found: %s",
+        plugin_name.c_str());
   }
 
   auto& plugin_iter = iter->second;

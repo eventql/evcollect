@@ -71,4 +71,41 @@ public:
 
 };
 
+class OutputPlugin {
+public:
+
+  virtual ~OutputPlugin() = default;
+
+  /**
+   * Called when the daemon is started
+   */
+  virtual ReturnCode pluginInit();
+
+  /**
+   * Called when the daemon is stopped
+   */
+  virtual void pluginFree();
+
+  /**
+   * Called for each event definition the plugin is attached to
+   */
+  virtual ReturnCode pluginAttach(
+      const PropertyList& config,
+      void** userdata);
+
+  /**
+   * Called for each event definition the plugin is detached from
+   */
+  virtual void pluginDetach(
+      void* userdata);
+
+  /**
+   * Emit the next event
+   */
+  virtual ReturnCode pluginEmitEvent(
+      void* userdata,
+      const EventData& evdata) = 0;
+
+};
+
 } // namespace evcollect

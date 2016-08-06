@@ -30,8 +30,8 @@
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
-
 class SourcePlugin;
+class OutputPlugin;
 
 struct EventSourceBinding {
   SourcePlugin* plugin;
@@ -46,6 +46,11 @@ struct EventBinding {
   uint64_t next_tick;
 };
 
+struct TargetBinding {
+  OutputPlugin* plugin;
+  void* userdata;
+};
+
 class Dispatch {
 public:
 
@@ -53,6 +58,7 @@ public:
   ~Dispatch();
 
   void addEventBinding(EventBinding* binding);
+  void addTargetBinding(TargetBinding* binding);
 
   ReturnCode run();
   void kill();
@@ -60,11 +66,15 @@ public:
 protected:
 
   ReturnCode runOnce(EventBinding* binding);
+
   ReturnCode emitEvent(
       EventBinding* binding,
       uint64_t time,
       const std::string& event_data);
 
+  ReturnCode deliverEvent(const EventData& evdata);
+
+  std::vector<TargetBinding*> targets_;
   std::multiset<
       EventBinding*,
       std::function<bool (EventBinding*, EventBinding*)>> queue_;

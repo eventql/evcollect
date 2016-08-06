@@ -88,12 +88,34 @@ void Dispatch::addEventBinding(EventBinding* binding) {
   queue_.insert(binding);
 }
 
+void Dispatch::addTargetBinding(TargetBinding* binding) {
+  targets_.push_back(binding);
+}
+
 ReturnCode Dispatch::emitEvent(
     EventBinding* binding,
     uint64_t time,
     const std::string& event_data) {
-  logInfo("EVENT: $0 => $1", binding->event_name, event_data);
-  return ReturnCode::success();
+  EventData evdata;
+  evdata.time = time;
+  evdata.event_name = binding->event_name;
+  evdata.event_data = event_data;
+
+  return deliverEvent(evdata);
+}
+
+ReturnCode Dispatch::deliverEvent(const EventData& evdata) {
+  logInfo("EVENT: $0 => $1", evdata.event_name, evdata.event_data);
+
+  auto rc_aggr = ReturnCode::success();
+  for (const auto& t : targets_) {
+    auto rc = t->plugin->pluginEmitEvent(t->userdata, evdata);
+    if (!rc.isSuccess()) {
+      rc_aggr = rc;
+    }
+  }
+
+  return rc_aggr;
 }
 
 ReturnCode Dispatch::run() {
