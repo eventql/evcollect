@@ -222,9 +222,11 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
       }
     }
 
-    auto rc = emitEvent(binding, now, event_merged);
-    if (!rc.isSuccess()) {
-      return rc;
+    if (!event_merged.empty()) {
+      auto rc = emitEvent(binding, now, event_merged);
+      if (!rc.isSuccess()) {
+        return rc;
+      }
     }
   }
 
