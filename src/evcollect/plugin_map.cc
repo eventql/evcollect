@@ -27,6 +27,16 @@
 
 namespace evcollect {
 
+PluginMap::~PluginMap() {
+  for (auto& plugin : source_plugins_) {
+    if (!plugin.second.plugin_initialized) {
+      continue;
+    }
+
+    plugin.second.plugin->pluginFree();
+  }
+}
+
 void PluginMap::registerSourcePlugin(
     const std::string& plugin_name,
     std::unique_ptr<SourcePlugin> plugin) {

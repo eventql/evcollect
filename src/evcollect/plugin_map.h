@@ -33,6 +33,8 @@ class SourcePlugin;
 class PluginMap {
 public:
 
+  ~PluginMap();
+
   void registerSourcePlugin(
       const std::string& plugin_name,
       std::unique_ptr<SourcePlugin> plugin);
