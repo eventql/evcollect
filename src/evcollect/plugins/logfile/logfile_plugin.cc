@@ -42,6 +42,7 @@ public:
 
   bool hasNextLine();
   ReturnCode getNextLine(std::string* line);
+  ReturnCode getNextEvent(std::string* event_json);
 
   ReturnCode readCheckpoint();
   ReturnCode writeCheckpoint();
@@ -107,6 +108,26 @@ ReturnCode LogfileSource::getNextLine(std::string* line) {
     }
     last_checkpoint_ = WallClock::unixMicros();
   }
+
+  return ReturnCode::success();
+}
+
+ReturnCode LogfileSource::getNextEvent(std::string* event_json) {
+  std::string raw_line;
+  {
+    auto rc = getNextLine(&raw_line);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+  }
+
+  if (raw_line.empty()) {
+    return ReturnCode::success();
+  }
+
+  *event_json = StringUtil::format(
+      R"({ "data": "$0" })",
+      StringUtil::jsonEscape(raw_line));
 
   return ReturnCode::success();
 }
@@ -190,6 +211,18 @@ bool LogfileSource::readNextByte(int fd, char* target) {
 ReturnCode LogfileSource::readCheckpoint() {
   inode_ = 0;
   offset_ = 0;
+
+  int fd = open(checkpoint_filename_.c_str(), O_RDONLY);
+  if (fd > 0) {
+    unsigned char cdata[sizeof(uint64_t) * 2];
+    if (read(fd, cdata, sizeof(cdata)) == sizeof(cdata)) {
+      memcpy(&inode_, &cdata[sizeof(uint64_t) * 0], sizeof(uint64_t));
+      memcpy(&offset_, &cdata[sizeof(uint64_t) * 1], sizeof(uint64_t));
+    }
+
+    close(fd);
+  }
+
   consumed_offset_ = offset_;
   checkpoint_inode_ = inode_;
   checkpoint_offset_ = offset_;
@@ -200,7 +233,6 @@ ReturnCode LogfileSource::writeCheckpoint() {
   if (checkpoint_inode_ == inode_ && checkpoint_offset_ == consumed_offset_) {
     return ReturnCode::success();
   }
-
 
   checkpoint_inode_ = inode_;
   checkpoint_offset_ = consumed_offset_;
@@ -245,23 +277,7 @@ void LogfileSourcePlugin::pluginDetach(void* userdata) {
 ReturnCode LogfileSourcePlugin::pluginGetNextEvent(
     void* userdata,
     std::string* event_json) {
-  std::string raw_line;
-  {
-    auto rc = static_cast<LogfileSource*>(userdata)->getNextLine(&raw_line);
-    if (!rc.isSuccess()) {
-      return rc;
-    }
-  }
-
-  if (raw_line.empty()) {
-    return ReturnCode::success();
-  }
-
-  *event_json = StringUtil::format(
-      R"({ "data": "$0" })",
-      StringUtil::jsonEscape(raw_line));
-
-  return ReturnCode::success();
+  return static_cast<LogfileSource*>(userdata)->getNextEvent(event_json);
 }
 
 bool LogfileSourcePlugin::pluginHasPendingEvent(
