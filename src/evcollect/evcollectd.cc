@@ -36,6 +36,7 @@
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
 #include <evcollect/plugins/hostname/hostname_plugin.h>
+#include <evcollect/plugins/logfile/logfile_plugin.h>
 
 using namespace evcollect;
 
@@ -189,12 +190,24 @@ int main(int argc, const char** argv) {
     auto& s = b.sources.back();
     s.plugin_name = "hostname";
   }
+  {
+    conf.event_bindings.emplace_back();
+    auto& b = conf.event_bindings.back();
+    b.event_name = "logs.access_log";
+    b.interval_micros = 100000;
+    b.sources.emplace_back();
+    auto& s = b.sources.back();
+    s.plugin_name = "logfile";
+  }
 
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap());
   plugin_map->registerSourcePlugin(
       "hostname",
       std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
+  plugin_map->registerSourcePlugin(
+      "logfile",
+      std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();

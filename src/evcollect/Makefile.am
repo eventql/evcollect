@@ -57,6 +57,8 @@ evcollectd_SOURCES = \
     util/unix_time.cc \
     plugins/hostname/hostname_plugin.h \
     plugins/hostname/hostname_plugin.cc \
+    plugins/logfile/logfile_plugin.h \
+    plugins/logfile/logfile_plugin.cc \
     plugin.h \
     plugin.cc \
     plugin_map.h \
