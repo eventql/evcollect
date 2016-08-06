@@ -207,7 +207,6 @@ int main(int argc, const char** argv) {
     auto ev_binding = new EventBinding();
     ev_binding->event_name = binding.event_name;
     ev_binding->interval_micros = binding.interval_micros;
-    ev_binding->collapse_events = true;
     event_bindings.emplace_back(ev_binding);
 
     for (const auto& source : binding.sources) {

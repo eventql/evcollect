@@ -55,7 +55,7 @@ ReturnCode HostnamePlugin::pluginGetNextEvent(
 
 bool HostnamePlugin::pluginHasPendingEvent(
     void* userdata) {
-  return true;
+  return false;
 }
 
 } // namespace plugins_hostname

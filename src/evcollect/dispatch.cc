@@ -195,31 +195,37 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
 
   std::string event_merged;
   std::string event_buf;
-  for (const auto& src : binding->sources) {
-    while (src.plugin->pluginHasPendingEvent(src.userdata)) {
+  for (bool cont = true; cont; ) {
+    cont = false;
+    event_merged.clear();
+
+    for (const auto& src : binding->sources) {
       event_buf.clear();
-      auto rc = src.plugin->pluginGetNextEvent(
-          binding,
-          &event_buf);
+      {
+        auto rc = src.plugin->pluginGetNextEvent(
+            binding,
+            &event_buf);
 
-      if (!rc.isSuccess()) {
-        return rc;
-      }
-
-      if (binding->collapse_events) {
-        event_merged = mergeEvents(event_merged, event_buf);
-        break;
-      } else {
-        auto rc = emitEvent(binding, now, event_buf);
         if (!rc.isSuccess()) {
           return rc;
         }
       }
-    }
-  }
 
-  if (binding->collapse_events) {
-    emitEvent(binding, now, event_merged);
+      if (event_merged.empty()) {
+        event_merged = event_buf;
+      } else {
+        event_merged = mergeEvents(event_merged, event_buf);
+      }
+
+      if (src.plugin->pluginHasPendingEvent(src.userdata)) {
+        cont = true;
+      }
+    }
+
+    auto rc = emitEvent(binding, now, event_merged);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
   }
 
   return ReturnCode::success();
