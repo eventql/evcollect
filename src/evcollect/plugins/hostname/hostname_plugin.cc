@@ -21,6 +21,9 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#include <netdb.h>
+#include <unistd.h>
+#include <evcollect/util/stringutil.h>
 #include "hostname_plugin.h"
 
 namespace evcollect {
@@ -30,7 +33,24 @@ ReturnCode HostnamePlugin::pluginGetNextEvent(
     const EventBinding* event,
     void* userdata,
     std::string* event_json) {
-  *event_json = "{}";
+  std::string hostname;
+  std::string hostname_fqdn;
+
+  hostname.resize(1024);
+  if (gethostname(&hostname[0], hostname.size()) == -1) {
+    return ReturnCode::error("SYSCALL_FAILED", "gethostname() failed");
+  } else {
+    hostname.resize(strlen(hostname.data()));
+  }
+
+  struct hostent* h = gethostbyname(hostname.c_str());
+  hostname_fqdn = std::string(h->h_name);
+
+  *event_json = StringUtil::format(
+      R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
+      StringUtil::jsonEscape(hostname),
+      StringUtil::jsonEscape(hostname_fqdn));
+
   return ReturnCode::success();
 }
 

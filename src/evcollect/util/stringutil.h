@@ -68,6 +68,22 @@ public:
   static std::string stripShell(const std::string& str);
 
   /**
+   * JSON Escape
+   *
+   * @param str the string to escape
+   * @return the escaped string
+   */
+  static std::string jsonEscape(const std::string& str);
+
+  /**
+   * JSON Unescape
+   *
+   * @param str the string to unescape
+   * @return the unescaped string
+   */
+  static std::string jsonUnescape(const std::string& str);
+
+  /**
    * Check if the provided string begins with the provided prefix
    *
    * @param str the string to check
