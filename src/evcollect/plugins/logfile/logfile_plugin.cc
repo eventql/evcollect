@@ -55,6 +55,7 @@ protected:
   std::string filename_;
   std::string checkpoint_filename_;
   pcre* pcre_handle_;
+  std::vector<std::string> pcre_fields_;
   uint64_t inode_;
   uint64_t offset_;
   uint64_t consumed_offset_;
@@ -76,6 +77,7 @@ LogfileSource::LogfileSource(
     const std::string& filename) :
     filename_(filename),
     checkpoint_filename_(filename + ".coff"),
+    pcre_handle_(nullptr),
     inode_(0),
     offset_(0),
     consumed_offset_(0),
@@ -102,11 +104,41 @@ ReturnCode LogfileSource::setRegex(const std::string& regex) {
       &error_pos,
       0);
 
-  if (pcre_handle_) {
-    return ReturnCode::success();
-  } else {
-    return ReturnCode::error("REGEX_ERROR", error_msg);
+  if (!pcre_handle_) {
+    return ReturnCode::error("REGEX_ERROR", "invalid regex: %s", error_msg);
   }
+
+  int namecount = 0;
+  int capture_count = 0;
+  pcre_fullinfo(pcre_handle_, NULL, PCRE_INFO_NAMECOUNT, &namecount);
+  pcre_fullinfo(pcre_handle_, NULL, PCRE_INFO_CAPTURECOUNT, &capture_count);
+
+  if (namecount < 1) {
+    pcre_free(pcre_handle_);
+    pcre_handle_ = nullptr;
+
+    return ReturnCode::error(
+        "REGEX_ERROR",
+        "regex has no named capture groups");
+  }
+
+  unsigned char* name_table;
+  int name_entry_size;
+  pcre_fullinfo(pcre_handle_, NULL, PCRE_INFO_NAMETABLE, &name_table);
+  pcre_fullinfo(pcre_handle_, NULL, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
+  pcre_fields_.clear();
+  pcre_fields_.resize(capture_count + 1);
+  auto tabptr = name_table;
+  for (int i = 0; i < namecount; i++) {
+    int idx = (tabptr[0] << 8) | tabptr[1];
+    pcre_fields_[idx] = std::string(
+        (const char*) tabptr + 2,
+        name_entry_size - 3);
+
+    tabptr += name_entry_size;
+  }
+
+  return ReturnCode::success();
 }
 
 bool LogfileSource::hasNextLine() {
@@ -157,8 +189,42 @@ ReturnCode LogfileSource::getNextEvent(std::string* event_json) {
   }
 
   if (pcre_handle_) {
-    *event_json += "{";
-    *event_json += "}";
+    const size_t OV_COUNT = 3 * 36;
+    int ovector[OV_COUNT];
+
+    int pcre_rc = pcre_exec(
+        pcre_handle_,
+        0,
+        raw_line.data(),
+        raw_line.size(),
+        0,
+        0,
+        ovector,
+        OV_COUNT);
+
+    if (pcre_rc >= 0) {
+      *event_json += "{";
+      size_t n = 0;
+      for (int i = 1; i < pcre_rc; ++i) {
+        if (pcre_fields_[i].empty()) {
+          continue;
+        }
+
+        if (++n > 1) {
+          *event_json += ",";
+        }
+
+        std::string evdata(
+            raw_line.data() + ovector[2*i],
+            ovector[2*i+1] - ovector[2*i]);
+
+        *event_json += "\"" + StringUtil::jsonEscape(pcre_fields_[i]) + "\":";
+        *event_json += "\"" + StringUtil::jsonEscape(evdata) + "\"";
+      }
+
+      *event_json += "}";
+    }
+
   } else {
     *event_json = StringUtil::format(
         R"({ "data": "$0" })",
