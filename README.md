@@ -58,7 +58,17 @@ Once we start evcollectd with the above config, this is what will happen:
   - Every 30s, evcollectd will call the "app_stats.sh" shell script and emit the returned JSON as "cluster.app_stats"
   - Every emitted event will be sent to kafka and eventql
 
+Here is what the "logs.access_log" event could look like:
 
+    {
+      ...
+    }
+
+And here is what the "cluster.system_stats" event could look like:
+
+    {
+      ...
+    }
 
 ## Building
 
@@ -154,5 +164,15 @@ are emitted.
   </tr>
 </table>
 
-
 ## Contributing
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
+
+## License
+
+evcollect is distributed under the AGPL v3 license, see LICENSE file for details.
+
