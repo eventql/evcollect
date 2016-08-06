@@ -31,19 +31,4 @@ struct PropertyList {
   std::vector<std::pair<std::string, std::string>> properties;
 };
 
-class SourcePlugin;
-
-struct EventSourceBinding {
-  SourcePlugin* plugin;
-  void* userdata;
-};
-
-struct EventBinding {
-  std::string event_name;
-  uint64_t interval_micros;
-  bool collapse_events;
-  std::vector<EventSourceBinding> sources;
-  uint64_t next_tick;
-};
-
 } // namespace evcollect

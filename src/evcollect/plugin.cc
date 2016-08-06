@@ -32,14 +32,13 @@ ReturnCode SourcePlugin::pluginInit() {
 void SourcePlugin::pluginFree() {}
 
 ReturnCode SourcePlugin::pluginAttach(
-    const EventBinding* event,
+    const PropertyList& config,
     void** userdata) {
   *userdata = nullptr;
   return ReturnCode::success();
 }
 
 void SourcePlugin::pluginDetach(
-    const EventBinding* event,
     void* userdata) {}
 
 } // namespace evcollect

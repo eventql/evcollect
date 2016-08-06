@@ -33,12 +33,10 @@ class HostnamePlugin : public SourcePlugin {
 public:
 
   ReturnCode pluginGetNextEvent(
-      const EventBinding* event,
       void* userdata,
       std::string* event_json) override;
 
   bool pluginHasPendingEvent(
-      const EventBinding* event,
       void* userdata) override;
 
 };

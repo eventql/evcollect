@@ -170,11 +170,10 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
   std::string event_merged;
   std::string event_buf;
   for (const auto& src : binding->sources) {
-    while (src.plugin->pluginHasPendingEvent(binding, src.userdata)) {
+    while (src.plugin->pluginHasPendingEvent(src.userdata)) {
       event_buf.clear();
       auto rc = src.plugin->pluginGetNextEvent(
           binding,
-          src.userdata,
           &event_buf);
 
       if (!rc.isSuccess()) {

@@ -181,7 +181,13 @@ int main(int argc, const char** argv) {
 
   // tmp
   {
-
+    conf.event_bindings.emplace_back();
+    auto& b = conf.event_bindings.back();
+    b.event_name = "sys.alive";
+    b.interval_micros = 1000000;
+    b.sources.emplace_back();
+    auto& s = b.sources.back();
+    s.plugin_name = "hostname";
   }
 
 
@@ -215,7 +221,7 @@ int main(int argc, const char** argv) {
 
       {
         auto rc = ev_source.plugin->pluginAttach(
-            ev_binding,
+            source.properties,
             &ev_source.userdata);
 
         if (!rc.isSuccess()) {
@@ -271,7 +277,7 @@ int main(int argc, const char** argv) {
 
   for (auto& binding : event_bindings) {
     for (auto& source : binding->sources) {
-      source.plugin->pluginDetach(binding.get(), source.userdata);
+      source.plugin->pluginDetach(source.userdata);
     }
   }
 

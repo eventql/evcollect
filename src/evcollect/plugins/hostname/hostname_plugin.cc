@@ -30,7 +30,6 @@ namespace evcollect {
 namespace plugin_hostname {
 
 ReturnCode HostnamePlugin::pluginGetNextEvent(
-    const EventBinding* event,
     void* userdata,
     std::string* event_json) {
   std::string hostname;
@@ -55,7 +54,6 @@ ReturnCode HostnamePlugin::pluginGetNextEvent(
 }
 
 bool HostnamePlugin::pluginHasPendingEvent(
-    const EventBinding* event,
     void* userdata) {
   return true;
 }
