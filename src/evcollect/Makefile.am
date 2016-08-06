@@ -37,6 +37,8 @@ else
 GETHOSTBYNAME_R_DEF =
 endif
 
+PCRE_LDADD=-lpcre
+
 AM_CXXFLAGS = -DEVCOLLECT_VERSION=\"v@PACKAGE_VERSION@\" $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOSTBYNAME_R_DEF) -std=c++0x -ftemplate-depth=500 -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wdelete-non-virtual-dtor -Wno-predefined-identifier-outside-function -Wno-invalid-offsetof -g -I../
 AM_CFLAGS =  $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOSTBYNAME_R_DEF) -std=c11 -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -Wall -pedantic -g
 AM_LDFLAGS = $(PTHREAD_CFLAGS)
@@ -65,7 +67,10 @@ evcollectd_SOURCES = \
     plugin_map.cc \
     dispatch.h \
     dispatch.cc \
+    evcollect.h \
+    evcollect.cc \
     evcollectd.cc
 
+evcollectd_LDADD = $(PCRE_LDADD)
 bin_PROGRAMS += evcollectd
 

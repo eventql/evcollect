@@ -196,8 +196,11 @@ int main(int argc, const char** argv) {
     b.event_name = "logs.access_log";
     b.interval_micros = 1000000;
     b.sources.emplace_back();
+
     auto& s = b.sources.back();
     s.plugin_name = "logfile";
+    s.properties.properties.emplace_back(
+        std::make_pair("regex", "(?<fuu>[^\|]*)?(?<bar>.*)"));
   }
 
   /* load plugins */

@@ -21,22 +21,34 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#pragma once
-#include <string>
-#include <vector>
+#include <evcollect/evcollect.h>
 
 namespace evcollect {
 
-struct PropertyList {
-  std::vector<std::pair<std::string, std::string>> properties;
-  bool get(const std::string& key, std::string* out) const;
-  size_t get(const std::string& key, std::vector<std::string>* out) const;
-};
+bool PropertyList::get(const std::string& key, std::string* out) const {
+  for (const auto& p : properties) {
+    if (p.first == key) {
+      *out = p.second;
+      return true;
+    }
+  }
 
-struct EventData {
-  uint64_t time;
-  std::string event_name;
-  std::string event_data;
-};
+  return false;
+}
+
+size_t PropertyList::get(
+    const std::string& key,
+    std::vector<std::string>* out) const {
+  size_t cnt = 0;
+
+  for (const auto& p : properties) {
+    if (p.first == key) {
+      out->push_back(p.second);
+      ++cnt;
+    }
+  }
+
+  return cnt;
+}
 
 } // namespace evcollect

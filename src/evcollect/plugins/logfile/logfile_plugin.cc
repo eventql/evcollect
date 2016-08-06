@@ -32,6 +32,7 @@
 #include <evcollect/util/wallclock.h>
 #include <evcollect/util/logging.h>
 #include "logfile_plugin.h"
+#include <pcre.h>
 
 namespace evcollect {
 namespace plugin_logfile {
@@ -39,6 +40,9 @@ namespace plugin_logfile {
 class LogfileSource {
 public:
   LogfileSource(const std::string& filename);
+  ~LogfileSource();
+
+  ReturnCode setRegex(const std::string& regex);
 
   bool hasNextLine();
   ReturnCode getNextLine(std::string* line);
@@ -50,6 +54,7 @@ public:
 protected:
   std::string filename_;
   std::string checkpoint_filename_;
+  pcre* pcre_handle_;
   uint64_t inode_;
   uint64_t offset_;
   uint64_t consumed_offset_;
@@ -79,6 +84,30 @@ LogfileSource::LogfileSource(
     checkpoint_interval_micros_(10 * kMicrosPerSecond),
     last_checkpoint_(0),
     line_buf_maxsize_(8192) {}
+
+LogfileSource::~LogfileSource() {
+  if (pcre_handle_) {
+    pcre_free(pcre_handle_);
+  }
+}
+
+ReturnCode LogfileSource::setRegex(const std::string& regex) {
+  const char* error_msg = "";
+  int error_pos = 0;
+
+  pcre_handle_ = pcre_compile(
+      regex.c_str(),
+      0,
+      &error_msg,
+      &error_pos,
+      0);
+
+  if (pcre_handle_) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error("REGEX_ERROR", error_msg);
+  }
+}
 
 bool LogfileSource::hasNextLine() {
   if (line_buf_.empty()) {
@@ -127,9 +156,14 @@ ReturnCode LogfileSource::getNextEvent(std::string* event_json) {
     return ReturnCode::success();
   }
 
-  *event_json = StringUtil::format(
-      R"({ "data": "$0" })",
-      StringUtil::jsonEscape(raw_line));
+  if (pcre_handle_) {
+    *event_json += "{";
+    *event_json += "}";
+  } else {
+    *event_json = StringUtil::format(
+        R"({ "data": "$0" })",
+        StringUtil::jsonEscape(raw_line));
+  }
 
   return ReturnCode::success();
 }
@@ -266,6 +300,15 @@ ReturnCode LogfileSourcePlugin::pluginAttach(
     void** userdata) {
   auto logfile = new LogfileSource("/tmp/log");
   logfile->readCheckpoint();
+
+  std::string regex;
+  if (config.get("regex", &regex)) {
+    auto rc = logfile->setRegex(regex);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+  }
+
   *userdata = logfile;
   return ReturnCode::success();
 }
