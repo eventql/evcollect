@@ -13,6 +13,7 @@ evcollect supports the following targets:
   - EventQL
   - Kafka
 
+
 ## Example
 
 An example says more than a thousand words, so here is an illustrative evcollectd
@@ -44,8 +45,10 @@ Once we start evcollectd with the above config, this is what will happen:
 
   - For each line in /var/log/nginx/access.log, evcollectd will emit a "logs.access_log" event
   - Every 30s, evcollectd will emit a "cluster.system_stats" event containing system load statistics
-  - Every 30s, evcollectd will call the "app_stats.sh" shell script and emit the returned JSON event
+  - Every 30s, evcollectd will call the "app_stats.sh" shell script and emit the returned JSON as "cluster.app_stats"
   - Every emitted event will be sent to kafka and eventql
+
+
 
 ## Building
 
@@ -74,9 +77,47 @@ To build evcollect from a git checkout:
     $ src/evql -h
 
 
+## Getting Started
+
+Once you have installed evcollect, create this minimal config file in `/etc/evcollect.conf`
+to get started:
+
+    event sysstat interval 1s
+      source plugin unix.system_stats
+
+Now you can start the evcollect daemon:
+
+    $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
+
+Note that we didn't pass the `--daemonize` flag so evcollect is running in the
+foregrund. Open a new terminal and type this command to see all events as they
+are emitted:
+
+    $ evcollectctl monitor
+
 ## Configuration
 
 ## Usage
+
+The evcollect distribution contains two binaries: `evcollectd` (the main
+daemon process) and `evcollectctl` (a command line util.)
+
+
+#### evcollectd
+
+The main daemon process.
+
+    $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
+
+
+#### evcollectctl list
+
+Connects to the main daemon process and lists all configured events and targets.
+
+#### evcollectctl monitor
+
+Connects to the main daemon process and dumps all events to the console as they
+are emitted.
 
 
 ## Plugins
