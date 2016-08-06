@@ -29,9 +29,7 @@ ReturnCode SourcePlugin::pluginInit() {
   return ReturnCode::success();
 }
 
-ReturnCode SourcePlugin::pluginFree() {
-  return ReturnCode::success();
-}
+void SourcePlugin::pluginFree() {}
 
 ReturnCode SourcePlugin::pluginAttach(
     const EventBinding* event,
@@ -40,10 +38,8 @@ ReturnCode SourcePlugin::pluginAttach(
   return ReturnCode::success();
 }
 
-ReturnCode SourcePlugin::pluginDetach(
+void SourcePlugin::pluginDetach(
     const EventBinding* event,
-    void* userdata) {
-  return ReturnCode::success();
-}
+    void* userdata) {}
 
 } // namespace evcollect

@@ -189,15 +189,26 @@ int main(int argc, const char** argv) {
     ev_binding->interval_micros = 1000000;
     ev_binding->collapse_events = true;
     event_bindings.emplace_back(ev_binding);
-  }
 
-  for (auto& binding : event_bindings) {
-    for (auto& source : binding->sources) {
-      auto rc = source.plugin->pluginAttach(binding.get(), &source.userdata);
-      if (!rc.isSuccess()) {
-        logFatal(rc.getMessage());
-        return 1;
+    {
+      EventSourceBinding source;
+      {
+        auto rc = plugin_map.getSourcePlugin("hostname", &source.plugin);
+        if (!rc.isSuccess()) {
+          logFatal(rc.getMessage());
+          return 1;
+        }
       }
+
+      {
+        auto rc = source.plugin->pluginAttach(ev_binding, &source.userdata);
+        if (!rc.isSuccess()) {
+          logFatal(rc.getMessage());
+          return 1;
+        }
+      }
+
+      ev_binding->sources.emplace_back(source);
     }
   }
 

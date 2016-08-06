@@ -41,7 +41,7 @@ public:
   /**
    * Called when the daemon is stopped
    */
-  virtual ReturnCode pluginFree();
+  virtual void pluginFree();
 
   /**
    * Called for each event definition the plugin is attached to
@@ -53,7 +53,7 @@ public:
   /**
    * Called for each event definition the plugin is detached from
    */
-  virtual ReturnCode pluginDetach(
+  virtual void pluginDetach(
       const EventBinding* event,
       void* userdata);
 
