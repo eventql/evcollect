@@ -91,6 +91,7 @@ ReturnCode Dispatch::emitEvent(
     EventBinding* binding,
     const std::string& event_data) {
   logInfo("EVENT: $0 => $1", binding->event_name, event_data);
+  return ReturnCode::success();
 }
 
 ReturnCode Dispatch::run() {
@@ -162,6 +163,10 @@ ReturnCode Dispatch::run() {
 }
 
 ReturnCode Dispatch::runOnce(EventBinding* binding) {
+  if (binding->sources.empty()) {
+    return ReturnCode::success();
+  }
+
   std::string event_merged;
   std::string event_buf;
   for (const auto& src : binding->sources) {

@@ -62,14 +62,14 @@ public:
   virtual ReturnCode pluginGetNextEvent(
       const EventBinding* event,
       void* userdata,
-      std::string* event_json);
+      std::string* event_json) = 0;
 
   /**
    * Returns true if there are pending events, false otherwise
    */
   virtual bool pluginHasPendingEvent(
       const EventBinding* event,
-      void* userdata);
+      void* userdata) = 0;
 
 };
 
