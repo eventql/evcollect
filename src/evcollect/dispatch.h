@@ -60,7 +60,10 @@ public:
 protected:
 
   ReturnCode runOnce(EventBinding* binding);
-  ReturnCode emitEvent(EventBinding* binding, const std::string& event_data);
+  ReturnCode emitEvent(
+      EventBinding* binding,
+      uint64_t time,
+      const std::string& event_data);
 
   std::multiset<
       EventBinding*,

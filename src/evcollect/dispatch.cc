@@ -26,6 +26,7 @@
 #include <evcollect/dispatch.h>
 #include <evcollect/plugin.h>
 #include <evcollect/util/logging.h>
+#include <evcollect/util/wallclock.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -89,6 +90,7 @@ void Dispatch::addEventBinding(EventBinding* binding) {
 
 ReturnCode Dispatch::emitEvent(
     EventBinding* binding,
+    uint64_t time,
     const std::string& event_data) {
   logInfo("EVENT: $0 => $1", binding->event_name, event_data);
   return ReturnCode::success();
@@ -167,6 +169,8 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
     return ReturnCode::success();
   }
 
+  auto now = WallClock::unixMicros();
+
   std::string event_merged;
   std::string event_buf;
   for (const auto& src : binding->sources) {
@@ -184,7 +188,7 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
         event_merged = mergeEvents(event_merged, event_buf);
         break;
       } else {
-        auto rc = emitEvent(binding, event_buf);
+        auto rc = emitEvent(binding, now, event_buf);
         if (!rc.isSuccess()) {
           return rc;
         }
@@ -193,7 +197,7 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
   }
 
   if (binding->collapse_events) {
-    emitEvent(binding, event_merged);
+    emitEvent(binding, now, event_merged);
   }
 
   return ReturnCode::success();
