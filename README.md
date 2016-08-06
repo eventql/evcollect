@@ -141,27 +141,70 @@ are emitted.
 
 ## Plugins
 
+### Source Plugins
+
 <table>
   <tr>
     <th>Plugin Name</th>
     <th>Defined Sensors</th>
   <tr>
+
   <tr>
-    <td valign="top">linux (<a href="">Example</a>)</td>
+    <td valign="top">shell (<a href="">Example</a>)</td>
     <td>
       <ul>
         <li>
-          <b>Sensor:</b> linux.sysstat
+          User Defined
+        </li>
+      </ul>
+    </td>
+  </tr>
+
+  <tr>
+    <td valign="top">logfile (<a href="">Example</a>)</td>
+    <td>
+      <ul>
+        <li>
+          User Defined
+        </li>
+      </ul>
+    </td>
+  </tr>
+
+  <tr>
+    <td valign="top">plugin: hostname (<a href="">Example</a>)</td>
+    <td>
+      <ul>
+        <li>
+          <b>Event:</b> hostname
           <ul>
-            <li>CPU Usage</li>
-            <li>Load</li>
-            <li>CPU Usage</li>
-            <li>CPU Usage</li>
+            <li>hostname</li>
           </ul>
         </li>
       </ul>
     </td>
   </tr>
+
+  <tr>
+    <td valign="top">plugin: unix (<a href="">Example</a>)</td>
+    <td>
+      <ul>
+        <li>
+          <b>Event:</b> unix.full_stats
+          <ul>
+            <li>CPU Usage, CPU Usage, CPU Usage, CPU Usage</li>
+          </ul>
+        </li>
+        <li>
+          <b>Event:</b> unix.disk_stats
+          <ul>
+            <li>CPU Usage, CPU Usage, CPU Usage, CPU Usage</li>
+          </ul>
+        </li>
+      </ul>
+    </td>
+  </tr>
+
 </table>
 
 ## Contributing
