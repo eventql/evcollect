@@ -29,6 +29,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <evcollect/util/stringutil.h>
+#include <evcollect/util/wallclock.h>
+#include <evcollect/util/logging.h>
 #include "logfile_plugin.h"
 
 namespace evcollect {
@@ -36,20 +38,24 @@ namespace plugin_logfile {
 
 class LogfileSource {
 public:
-  LogfileSource(
-      const std::string& filename,
-      size_t inode,
-      size_t offset);
+  LogfileSource(const std::string& filename);
 
   bool hasNextLine();
   ReturnCode getNextLine(std::string* line);
-  size_t getOffset() const;
+
+  ReturnCode readCheckpoint();
+  ReturnCode writeCheckpoint();
 
 protected:
   std::string filename_;
-  size_t inode_;
-  size_t offset_;
-  size_t consumed_offset_;
+  std::string checkpoint_filename_;
+  uint64_t inode_;
+  uint64_t offset_;
+  uint64_t consumed_offset_;
+  uint64_t checkpoint_inode_;
+  uint64_t checkpoint_offset_;
+  uint64_t checkpoint_interval_micros_;
+  uint64_t last_checkpoint_;
   char buf_[8192];
   size_t buf_len_;
   size_t buf_pos_;
@@ -60,13 +66,16 @@ protected:
 };
 
 LogfileSource::LogfileSource(
-    const std::string& filename,
-    size_t inode,
-    size_t offset) :
+    const std::string& filename) :
     filename_(filename),
-    inode_(inode),
-    offset_(offset),
-    consumed_offset_(offset) {}
+    checkpoint_filename_(filename + ".coff"),
+    inode_(0),
+    offset_(0),
+    consumed_offset_(0),
+    checkpoint_inode_(0),
+    checkpoint_offset_(0),
+    checkpoint_interval_micros_(10 * kMicrosPerSecond),
+    last_checkpoint_(0) {}
 
 bool LogfileSource::hasNextLine() {
   if (line_buf_.empty()) {
@@ -90,11 +99,16 @@ ReturnCode LogfileSource::getNextLine(std::string* line) {
     line_buf_.pop_front();
   }
 
-  return ReturnCode::success();
-}
+  auto now = WallClock::unixMicros();
+  if (now - last_checkpoint_ >= checkpoint_interval_micros_) {
+    auto rc = writeCheckpoint();
+    if (!rc.isSuccess()) {
+      logWarning("error while writing checkpoint file: $0", rc.getMessage());
+    }
+    last_checkpoint_ = WallClock::unixMicros();
+  }
 
-size_t LogfileSource::getOffset() const {
-  return consumed_offset_;
+  return ReturnCode::success();
 }
 
 ReturnCode LogfileSource::readLines() {
@@ -110,6 +124,10 @@ ReturnCode LogfileSource::readLines() {
     inode_ = file_inode;
     offset_ = 0;
     consumed_offset_ = 0;
+  }
+
+  if (file_size == offset_) {
+    return ReturnCode::success();
   }
 
   int fd = open(filename_.c_str(), O_RDONLY, 0);
@@ -169,15 +187,59 @@ bool LogfileSource::readNextByte(int fd, char* target) {
   }
 }
 
+ReturnCode LogfileSource::readCheckpoint() {
+  inode_ = 0;
+  offset_ = 0;
+  consumed_offset_ = offset_;
+  checkpoint_inode_ = inode_;
+  checkpoint_offset_ = offset_;
+  return ReturnCode::success();
+}
+
+ReturnCode LogfileSource::writeCheckpoint() {
+  if (checkpoint_inode_ == inode_ && checkpoint_offset_ == consumed_offset_) {
+    return ReturnCode::success();
+  }
+
+
+  checkpoint_inode_ = inode_;
+  checkpoint_offset_ = consumed_offset_;
+
+  unsigned char cdata[sizeof(uint64_t) * 2];
+  memcpy(&cdata[sizeof(uint64_t) * 0], &checkpoint_inode_, sizeof(uint64_t));
+  memcpy(&cdata[sizeof(uint64_t) * 1], &checkpoint_offset_, sizeof(uint64_t));
+
+  int fd = open(
+      checkpoint_filename_.c_str(),
+      O_WRONLY | O_TRUNC | O_CREAT,
+      0666);
+
+  if (fd < 0) {
+    return ReturnCode::error(
+        "IOERR",
+        "open('%s') failed",
+        checkpoint_filename_.c_str());
+  }
+
+  write(fd, cdata, sizeof(cdata));
+  close(fd);
+
+  return ReturnCode::success();
+}
+
 ReturnCode LogfileSourcePlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
-  *userdata = new LogfileSource("/tmp/log", 0, 0);
+  auto logfile = new LogfileSource("/tmp/log");
+  logfile->readCheckpoint();
+  *userdata = logfile;
   return ReturnCode::success();
 }
 
 void LogfileSourcePlugin::pluginDetach(void* userdata) {
-  delete static_cast<LogfileSource*>(userdata);
+  auto logfile = static_cast<LogfileSource*>(userdata);
+  logfile->writeCheckpoint();
+  delete logfile;
 }
 
 ReturnCode LogfileSourcePlugin::pluginGetNextEvent(
