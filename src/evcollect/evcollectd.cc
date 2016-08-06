@@ -117,9 +117,9 @@ int main(int argc, const char** argv) {
     }
   }
 
-  //if (!flags.isSet("nolog_to_stderr") && !flags.isSet("daemonize")) {
-  //  Application::logToStderr("evqld");
-  //}
+  if (!flags.isSet("nolog_to_stderr") && !flags.isSet("daemonize")) {
+    Logger::logToStderr("evqld");
+  }
 
   //if (flags.isSet("log_to_syslog")) {
   //  Application::logToSyslog("evqld");

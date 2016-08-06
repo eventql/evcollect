@@ -22,7 +22,12 @@
  * code of your own applications
  */
 #include "logging.h"
+#include "wallclock.h"
 #include <assert.h>
+#include <iostream>
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
 
 const char* logLevelToStr(LogLevel log_level) {
   switch (log_level) {
@@ -92,3 +97,100 @@ void Logger::addTarget(LogTarget* target) {
 void Logger::setMinimumLogLevel(LogLevel min_level) {
   min_level_ = min_level;
 }
+
+// stderr
+class StderrLogOutputStream : public LogTarget {
+public:
+
+  StderrLogOutputStream(
+      const std::string& program_name);
+
+  void log(
+      LogLevel level,
+      const std::string& message) override;
+
+protected:
+  std::string program_name_;
+};
+
+StderrLogOutputStream::StderrLogOutputStream(
+    const std::string& program_name) :
+    program_name_(program_name) {}
+
+void StderrLogOutputStream::log(
+    LogLevel level,
+    const std::string& message) {
+  const auto prefix = StringUtil::format(
+      "$0 $1 [$2] ",
+      WallClock::now().toString("%Y-%m-%d %H:%M:%S"),
+      program_name_,
+      logLevelToStr(level));
+
+  std::string lines = prefix + message;
+  StringUtil::replaceAll(&lines, "\n", "\n" + prefix);
+  lines.append("\n");
+
+  std::cerr << lines;
+}
+
+void Logger::logToStderr(
+    const std::string& program_name,
+    LogLevel min_log_level /* = LogLevel::kInfo */) {
+  auto logger = new StderrLogOutputStream(program_name);
+  Logger::get()->setMinimumLogLevel(min_log_level);
+  Logger::get()->addTarget(logger);
+}
+
+// syslog
+class SyslogTarget : public LogTarget {
+public:
+
+  SyslogTarget(const std::string& name);
+  ~SyslogTarget();
+
+  void log(
+      LogLevel level,
+      const std::string& message) override;
+
+protected:
+  std::unique_ptr<char> ident_;
+};
+
+SyslogTarget::SyslogTarget(const std::string& name)  {
+#ifdef HAVE_SYSLOG_H
+  setlogmask(LOG_UPTO(LOG_DEBUG));
+
+
+  ident_ = std::unique_ptr<char>((char*) malloc(name.length() + 1));
+  if (ident_.get()) {
+    memcpy(ident_.get(), name.c_str(), name.length() + 1);
+    openlog(ident_.get(), LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+  } else {
+    openlog(NULL, LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+  }
+#else
+  RAISE(kRuntimeError, "compiled without syslog support");
+#endif
+}
+
+SyslogTarget::~SyslogTarget()  {
+#ifdef HAVE_SYSLOG_H
+  closelog();
+#endif
+}
+
+void SyslogTarget::log(
+    LogLevel level,
+    const std::string& message) {
+#ifdef HAVE_SYSLOG_H
+  syslog(LOG_NOTICE, "[%s] %s", logLevelToStr(level), message.c_str());
+#endif
+}
+
+void Logger::logToSyslog(
+    const std::string& name,
+    LogLevel min_log_level /* = LogLevel::kInfo */) {
+  auto logger = new SyslogTarget(name);
+  Logger::get()->addTarget(logger);
+}
+

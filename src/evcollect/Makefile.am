@@ -51,6 +51,10 @@ evcollectd_SOURCES = \
     util/stringutil.h \
     util/stringutil_impl.h \
     util/stringutil.cc \
+    util/wallclock.h \
+    util/wallclock.cc \
+    util/unix_time.h \
+    util/unix_time.cc \
     evcollectd.cc
 
 bin_PROGRAMS += evcollectd

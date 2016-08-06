@@ -74,6 +74,14 @@ public:
   void addTarget(LogTarget* target);
   void setMinimumLogLevel(LogLevel min_level);
 
+  static void logToStderr(
+      const std::string& program_name,
+      LogLevel min_log_level = LogLevel::kInfo);
+
+  static void logToSyslog(
+      const std::string& name,
+      LogLevel min_log_level = LogLevel::kInfo);
+
 protected:
   std::atomic<LogLevel> min_level_;
   std::atomic<size_t> max_listener_index_;
