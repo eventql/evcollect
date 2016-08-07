@@ -35,6 +35,10 @@ public:
   EventQLTarget();
   ~EventQLTarget();
 
+  void addRoute(
+      const std::string& event_name_match,
+      const std::string& target);
+
   ReturnCode emitEvent(const EventData& event);
 
   ReturnCode startUploadThread();
@@ -55,8 +59,7 @@ protected:
 
   struct EventRouting {
     std::string event_name_match;
-    std::string target_database;
-    std::string target_table;
+    std::string target;
   };
 
   ReturnCode enqueueEvent(const EnqueuedEvent& event);
@@ -79,15 +82,32 @@ EventQLTarget::EventQLTarget() :
 
 EventQLTarget::~EventQLTarget() {}
 
+void EventQLTarget::addRoute(
+    const std::string& event_name_match,
+    const std::string& target) {
+  EventRouting r;
+  r.event_name_match = event_name_match;
+  r.target = target;
+  routes_.emplace_back(r);
+}
+
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
   for (const auto& route : routes_) {
     if (route.event_name_match != event.event_name) {
       continue;
     }
 
+    auto target = StringUtil::split(route.target, "/");
+    if (target.size() != 2) {
+      return ReturnCode::error(
+          "EINVAL",
+          "invalid target specification. " \
+          "format is: database/table");
+    }
+
     EnqueuedEvent e;
-    e.database = route.target_database;
-    e.table = route.target_table;
+    e.database = target[0];
+    e.table = target[1];
     e.data = event.event_data;
 
     auto rc = enqueueEvent(e);
@@ -186,6 +206,20 @@ ReturnCode EventQLPlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
   std::unique_ptr<EventQLTarget> target(new EventQLTarget());
+
+  std::vector<std::vector<std::string>> route_cfg;
+  config.get("route", &route_cfg);
+  for (const auto& route : route_cfg) {
+    if (route.size() != 2) {
+      return ReturnCode::error(
+          "EINVAL",
+          "invalid number of arguments to route. " \
+          "format is: route <event> <target>");
+    }
+
+    target->addRoute(route[0], route[1]);
+  }
+
   target->startUploadThread();
   *userdata = target.release();
   return ReturnCode::success();
