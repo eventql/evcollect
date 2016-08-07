@@ -60,6 +60,8 @@ evcollectd_SOURCES = \
     util/time.cc \
     util/sha1.h \
     util/sha1.cc \
+    util/base64.h \
+    util/base64.cc \
     plugins/eventql/eventql_plugin.h \
     plugins/eventql/eventql_plugin.cc \
     plugins/hostname/hostname_plugin.h \

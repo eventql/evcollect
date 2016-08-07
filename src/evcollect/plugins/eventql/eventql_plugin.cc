@@ -26,6 +26,7 @@
 #include <curl/curl.h>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/util/logging.h>
+#include <evcollect/util/base64.h>
 
 namespace evcollect {
 namespace plugin_eventql {
@@ -271,12 +272,15 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
       "Content-Type: application/json; charset=utf-8");
 
   if (!auth_token_.empty()) {
-    auto hdr = StringUtil::format("Authorization: Token $0", auth_token_);
+    auto hdr = "Authorization: Token " + auth_token_;
     req_headers = curl_slist_append(req_headers, hdr.c_str());
   }
 
-  //if (!username_.empty() || !password.empty()) {
-  //}
+  if (!username_.empty() || !password_.empty()) {
+    std::string hdr = "Authorization: Basic ";
+    hdr += Base64::encode(username_ + ":" + password_);
+    req_headers = curl_slist_append(req_headers, hdr.c_str());
+  }
 
   std::string res_body;
   curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
