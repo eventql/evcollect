@@ -1,5 +1,6 @@
 - [ ] route wildcards + target format strings
 - [ ] write spool file in eventql upload
+- [ ] make timeout + max queue length configurable in eventql plugin
 - [ ] bind/listen/handle monitor socket
 - [ ] evcollectctl
 - [ ] mergeEvents impl
