@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/file.h>
+#include <curl/curl.h>
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/evcollect.h>
@@ -170,6 +171,9 @@ int main(int argc, const char** argv) {
 
     return 0;
   }
+
+  /* init libraries */
+  curl_global_init(CURL_GLOBAL_DEFAULT);
 
   /* load config */
   ProcessConfig conf;
