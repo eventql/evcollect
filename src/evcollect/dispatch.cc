@@ -77,8 +77,6 @@ ReturnCode Dispatch::emitEvent(
 }
 
 ReturnCode Dispatch::deliverEvent(const EventData& evdata) {
-  logDebug("EVENT: $0 => $1", evdata.event_name, evdata.event_data);
-
   auto rc_aggr = ReturnCode::success();
   for (const auto& t : targets_) {
     auto rc = t->plugin->pluginEmitEvent(t->userdata, evdata);

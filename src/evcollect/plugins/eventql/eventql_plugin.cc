@@ -60,6 +60,7 @@ protected:
       std::vector<TargetTable>* targets);
 
   void runUploadThread();
+  ReturnCode uploadEvent(const EnqueuedEvent& event);
 
   std::deque<EnqueuedEvent> queue_;
   mutable std::mutex mutex_;
@@ -178,8 +179,20 @@ void EventQLTarget::runUploadThread() {
       continue;
     }
 
-    logInfo("upload event: $0/$1 => $2", ev.database, ev.table, ev.data);
+    auto rc = uploadEvent(ev);
+    if (!rc.isSuccess()) {
+      logError(
+          "error while uploading event to $0/$1: $2", 
+          ev.database,
+          ev.table,
+          rc.getMessage());
+    }
   }
+}
+
+ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
+  logInfo("upload event: $0/$1 => $2", ev.database, ev.table, ev.data);
+  return ReturnCode::success();
 }
 
 ReturnCode EventQLPlugin::pluginAttach(
