@@ -24,9 +24,18 @@
  */
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 #include <sys/statvfs.h>
 #include <evcollect/util/stringutil.h>
 #include "unix_stats_plugin.h"
+
+#ifdef linux
+#include <mntent.h>
+#elif __APPLE__
+#include <sys/param.h>
+#include <sys/ucred.h>
+#include <sys/mount.h>
+#endif
 
 namespace evcollect {
 namespace plugin_unix_stats {
@@ -37,13 +46,13 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
   std::string hostname;
   std::string hostname_fqdn;
 
+  auto mount_info = getMountInfo();
 
 
   *event_json = StringUtil::format(
       R"({ "test": "$0", "blah": "$1" })",
       StringUtil::jsonEscape(hostname),
       StringUtil::jsonEscape(hostname_fqdn));
-
   return ReturnCode::success();
 }
 
@@ -53,15 +62,27 @@ bool UnixStatsPlugin::pluginHasPendingEvent(
 }
 
 std::vector<UnixStatsPlugin::MountInfo> UnixStatsPlugin::getMountInfo() {
-  UnixStatsPlugin::MountInfo mount_info = {
-    .device = "test",
-    .mount_point = "test",
-    .fs_type = UnixStatsPlugin::fsType::EXT3
-  };
+std::vector<UnixStatsPlugin::MountInfo> mount_info;
 
-  std::vector<UnixStatsPlugin::MountInfo> infos;
-  infos.emplace_back(mount_info);
-  return infos;
+#ifdef linux
+  auto mntent = getmntent("/etc/fstab");
+
+#elif __APPLE__
+
+  struct statfs *mntbuf;
+  auto mntsize = getmntinfo(&mntbuf, MNT_NOWAIT);
+  for (size_t i = 0; i < mntsize; ++i) {
+    UnixStatsPlugin::MountInfo mn_info = {
+      .device = mntbuf[i].f_mntfromname,
+      .mount_point = mntbuf[i].f_mntonname //FIXME add type
+    };
+
+    mount_info.emplace_back(mn_info);
+  }
+
+#endif
+
+  return mount_info;
 }
 
 } // namespace plugin_unix_stats
