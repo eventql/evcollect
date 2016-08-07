@@ -50,6 +50,7 @@ struct ProcessConfig {
   std::vector<EventBindingConfig> event_bindings;
   std::vector<TargetBindingConfig> target_bindings;
   std::string spool_dir;
+  std::vector<std::string> load_plugins;
 };
 
 ReturnCode loadConfig(

@@ -29,6 +29,9 @@ namespace evcollect {
 ReturnCode loadConfig(
     const std::string& config_file_path,
     ProcessConfig* conf) {
+  conf->load_plugins.push_back("./plugins/hostname/.libs/plugin_hostname.so");
+  conf->load_plugins.push_back("./plugins/eventql/.libs/plugin_eventql.so");
+
   {
     conf->event_bindings.emplace_back();
     auto& b = conf->event_bindings.back();

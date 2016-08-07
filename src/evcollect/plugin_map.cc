@@ -40,6 +40,12 @@ PluginMap::~PluginMap() {
   }
 }
 
+ReturnCode PluginMap::loadPlugin(
+    const std::string& plugin_name,
+    PluginContext* ctx) const {
+  return evcollect::loadPlugin(ctx, plugin_name);
+}
+
 void PluginMap::registerSourcePlugin(
     const std::string& plugin_name,
     std::unique_ptr<SourcePlugin> plugin) {
