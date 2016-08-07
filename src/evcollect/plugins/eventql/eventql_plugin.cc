@@ -23,6 +23,7 @@
  */
 #include <deque>
 #include <thread>
+#include <string.h>
 #include <curl/curl.h>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/util/logging.h>
