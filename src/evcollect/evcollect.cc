@@ -27,10 +27,16 @@ namespace evcollect {
 
 bool PropertyList::get(const std::string& key, std::string* out) const {
   for (const auto& p : properties) {
-    if (p.first == key) {
-      *out = p.second;
-      return true;
+    if (p.first != key) {
+      continue;
     }
+
+    if (p.second.empty()) {
+      continue;
+    }
+
+    *out = p.second.front();
+    return true;
   }
 
   return false;
@@ -38,7 +44,7 @@ bool PropertyList::get(const std::string& key, std::string* out) const {
 
 size_t PropertyList::get(
     const std::string& key,
-    std::vector<std::string>* out) const {
+    std::vector<std::vector<std::string>>* out) const {
   size_t cnt = 0;
 
   for (const auto& p : properties) {

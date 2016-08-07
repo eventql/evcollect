@@ -200,7 +200,9 @@ int main(int argc, const char** argv) {
     auto& s = b.sources.back();
     s.plugin_name = "logfile";
     s.properties.properties.emplace_back(
-        std::make_pair("regex", "(?<fuu>[^\|]*)?(?<bar>.*)"));
+        std::make_pair(
+            "regex",
+            std::vector<std::string> { "(?<fuu>[^\\|]*)?(?<bar>.*)" }));
   }
 
   {
