@@ -158,7 +158,6 @@ void EventQLTarget::stopUploadThread() {
     return;
   }
 
-
   thread_shutdown_ = true;
   cv_.notify_all();
   thread_.join();
