@@ -28,11 +28,73 @@ namespace plugin_eventql {
 
 class EventQLTarget {
 public:
-  void enqueueEvent(const EventData& event);
+
+  EventQLTarget();
+
+  ReturnCode emitEvent(const EventData& event);
+
+protected:
+
+  struct TargetTable {
+    std::string database;
+    std::string table;
+  };
+
+  struct EnqueuedEvent {
+    std::string database;
+    std::string table;
+    std::string data;
+  };
+
+  ReturnCode enqueueEvent(const EnqueuedEvent& event);
+
+  ReturnCode getTargetTables(
+      const EventData& eventdata,
+      std::vector<TargetTable>* targets);
+
 };
 
-void EventQLTarget::enqueueEvent(const EventData& event) {
-  printf("enqueue event..\n");
+EventQLTarget::EventQLTarget() {}
+
+ReturnCode EventQLTarget::emitEvent(const EventData& event) {
+  std::vector<TargetTable> target_tables;
+  {
+    auto rc = getTargetTables(event, &target_tables);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+  }
+
+  for (const auto& target_table : target_tables) {
+    EnqueuedEvent e;
+    e.database = target_table.database;
+    e.table = target_table.table;
+    e.data = event.event_data;
+
+    auto rc = enqueueEvent(e);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+  }
+
+  return ReturnCode::success();
+}
+
+ReturnCode EventQLTarget::enqueueEvent(const EnqueuedEvent& event) {
+  return ReturnCode::success();
+}
+
+ReturnCode EventQLTarget::getTargetTables(
+    const EventData& eventdata,
+    std::vector<TargetTable>* targets) {
+
+  // not yet implemented...
+  TargetTable t;
+  t.database = "mydb";
+  t.table = "mytbl";
+  targets->push_back(t);
+
+  return ReturnCode::success();
 }
 
 ReturnCode EventQLPlugin::pluginAttach(
@@ -52,7 +114,7 @@ ReturnCode EventQLPlugin::pluginEmitEvent(
     void* userdata,
     const EventData& evdata) {
   auto target = static_cast<EventQLTarget*>(userdata);
-  target->enqueueEvent(evdata);
+  target->emitEvent(evdata);
   return ReturnCode::success();
 }
 
