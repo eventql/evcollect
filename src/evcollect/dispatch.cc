@@ -205,7 +205,8 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
 
 void Dispatch::kill() {
   char data = 0;
-  write(wakeup_pipe_[1], &data, 1);
+  int rc = write(wakeup_pipe_[1], &data, 1);
+  (void) rc;
 }
 
 } // namespace evcollect
