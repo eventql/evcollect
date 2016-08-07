@@ -128,7 +128,20 @@ daemon process) and `evcollectctl` (a command line util.)
 
 The main daemon process.
 
-    $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
+    Usage: $ evcollectd [OPTIONS]
+
+       -s, --spool_dir <dir>     Where to store temporary files
+       -c, --config <file>       Load config from file
+       --daemonize               Daemonize the server
+       --pidfile <file>          Write a PID file
+       --loglevel <level>        Minimum log level (default: INFO)
+       --[no]log_to_syslog       Do[n't] log to syslog
+       --[no]log_to_stderr       Do[n't] log to stderr
+       -?, --help                Display this help text and exit
+       -v, --version             Display the version of this binary and exit
+
+    Examples:
+       $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
 
 
 #### evcollectctl list
