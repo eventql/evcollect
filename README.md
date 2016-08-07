@@ -73,7 +73,7 @@ And here is what the "cluster.system_stats" event could look like:
 ## Building
 
 Before we can start we need to install some build dependencies. Currently
-you need a modern c++ compiler, libz, autotools and python (for spidermonkey/mozbuild)
+you need a modern c++ compiler, libz, autotools
 
     # Ubuntu
     $ apt-get install clang++ cmake make automake autoconf zlib1g-dev
