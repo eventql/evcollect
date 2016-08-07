@@ -23,6 +23,7 @@
  */
 #include <deque>
 #include <thread>
+#include <condition_variable>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/util/logging.h>
 
