@@ -22,7 +22,7 @@
  * code of your own applications
  */
 #include "logging.h"
-#include "wallclock.h"
+#include "time.h"
 #include <assert.h>
 #include <string.h>
 #include <iostream>

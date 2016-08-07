@@ -53,10 +53,9 @@ evcollectd_SOURCES = \
     util/stringutil.h \
     util/stringutil_impl.h \
     util/stringutil.cc \
-    util/wallclock.h \
-    util/wallclock.cc \
-    util/unix_time.h \
-    util/unix_time.cc \
+    util/time.h \
+    util/time_impl.h \
+    util/time.cc \
     plugins/hostname/hostname_plugin.h \
     plugins/hostname/hostname_plugin.cc \
     plugins/logfile/logfile_plugin.h \

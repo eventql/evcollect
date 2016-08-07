@@ -26,46 +26,18 @@
 #include <evcollect/dispatch.h>
 #include <evcollect/plugin.h>
 #include <evcollect/util/logging.h>
-#include <evcollect/util/wallclock.h>
+#include <evcollect/util/time.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
+
+namespace evcollect {
 
 namespace {
-
-uint64_t getMonoTime() {
-
-#ifdef __MACH__
-  clock_serv_t cclock;
-  mach_timespec_t mts;
-  host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
-  clock_get_time(cclock, &mts);
-  mach_port_deallocate(mach_task_self(), cclock);
-  return std::uint64_t(mts.tv_sec) * 1000000 + mts.tv_nsec / 1000;
-#else
-  timespec ts;
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-    logFatal("clock_gettime(CLOCK_MONOTONIC) failed");
-    abort();
-  } else {
-    return std::uint64_t(ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
-  }
-#endif
-
-}
 
 std::string mergeEvents(const std::string& base, const std::string& overlay) {
   return overlay;
 }
 
-
 } // namespace
-
-namespace evcollect {
 
 Dispatch::Dispatch() :
     queue_([] (EventBinding* a, EventBinding* b) {
@@ -84,7 +56,7 @@ Dispatch::~Dispatch() {
 }
 
 void Dispatch::addEventBinding(EventBinding* binding) {
-  binding->next_tick = getMonoTime() + binding->interval_micros;
+  binding->next_tick = MonotonicClock::now() + binding->interval_micros;
   queue_.insert(binding);
 }
 
@@ -124,7 +96,7 @@ ReturnCode Dispatch::run() {
   }
 
   while (true) {
-    auto now = getMonoTime();
+    auto now = MonotonicClock::now();
     auto job = *queue_.begin();
     auto sleep = job->next_tick - now;
 
@@ -156,7 +128,7 @@ ReturnCode Dispatch::run() {
       }
     }
 
-    now = getMonoTime();
+    now = MonotonicClock::now();
     if (job->next_tick > now) {
       continue;
     }
@@ -171,7 +143,7 @@ ReturnCode Dispatch::run() {
 
     queue_.erase(queue_.begin());
 
-    now = getMonoTime();
+    now = MonotonicClock::now();
     job->next_tick = job->next_tick + job->interval_micros;
     if (job->next_tick < now) {
       logWarning(

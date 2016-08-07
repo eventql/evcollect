@@ -1,6 +1,8 @@
 /**
  * Copyright (c) 2016 DeepCortex GmbH <legal@eventql.io>
  * Authors:
+ *   - Laura Schlimmer <laura@eventql.io>
+ *   - Christian Parpart <christianparpart@gmail.com>
  *   - Paul Asmuth <paul@eventql.io>
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -21,8 +23,7 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#ifndef _STX_TIME_CONSTANTS_H
-#define _STX_TIME_CONSTANTS_H
+#pragma once
 #include <ctime>
 #include <inttypes.h>
 #include <limits>
@@ -51,4 +52,100 @@ constexpr const uint64_t kSecondsPerYear = kDaysPerYear * kSecondsPerDay;
 constexpr const uint64_t kMillisPerYear = kDaysPerYear * kMillisPerDay;
 constexpr const uint64_t kMicrosPerYear = kDaysPerYear * kMicrosPerDay;
 
-#endif
+class UnixTime;
+
+class WallClock {
+public:
+  static UnixTime now();
+  static uint64_t unixSeconds();
+  static uint64_t getUnixMillis();
+  static uint64_t unixMillis();
+  static uint64_t getUnixMicros();
+  static uint64_t unixMicros();
+};
+
+class MonotonicClock {
+public:
+  static uint64_t now();
+};
+
+class UnixTime {
+public:
+
+  /**
+   * Create a new UTC UnixTime instance with time = now
+   */
+  UnixTime();
+
+  /**
+   * Create a new UTC UnixTime instance
+   *
+   * @param timestamp the UTC microsecond timestamp
+   */
+  constexpr UnixTime(uint64_t utc_time);
+
+  /**
+   * Return a representation of the date as a string (strftime)
+   *
+   * @param fmt the strftime format string (optional)
+   */
+  std::string toString(const char* fmt = "%Y-%m-%d %H:%M:%S") const;
+
+  UnixTime& operator=(const UnixTime& other);
+
+  constexpr bool operator==(const UnixTime& other) const;
+  constexpr bool operator!=(const UnixTime& other) const;
+  constexpr bool operator<(const UnixTime& other) const;
+  constexpr bool operator>(const UnixTime& other) const;
+  constexpr bool operator<=(const UnixTime& other) const;
+  constexpr bool operator>=(const UnixTime& other) const;
+
+  /**
+   * Cast the UnixTime object to a UTC unix microsecond timestamp represented as
+   * an uint64_t
+   */
+  constexpr explicit operator uint64_t() const;
+
+  /**
+   * Cast the UnixTime object to a UTC unix microsecond timestamp represented as
+   * a double
+   */
+  constexpr explicit operator double() const;
+
+  /**
+   * Return the represented date/time as a UTC unix microsecond timestamp
+   */
+  constexpr uint64_t unixMicros() const;
+
+  /**
+   * Return a new UnixTime instance with time 00:00:00 UTC, 1 Jan. 1970
+   */
+  static inline UnixTime epoch();
+
+  /**
+   * Return a new UnixTime instance with time = now
+   */
+  static inline UnixTime now();
+
+  /**
+   * Return a new UnixTime instance with time = now + days
+   */
+  static inline UnixTime daysFromNow(double days);
+
+protected:
+
+  /**
+   * The utc microsecond timestamp of the represented moment in time
+   */
+  uint64_t utc_micros_;
+};
+
+namespace std {
+template <> class numeric_limits<UnixTime> {
+public:
+  static UnixTime max();
+  static UnixTime min();
+};
+}
+
+#include "time_impl.h"

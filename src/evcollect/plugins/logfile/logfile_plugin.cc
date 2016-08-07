@@ -30,7 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <evcollect/util/stringutil.h>
-#include <evcollect/util/wallclock.h>
+#include <evcollect/util/time.h>
 #include <evcollect/util/logging.h>
 #include "logfile_plugin.h"
 #include <pcre.h>

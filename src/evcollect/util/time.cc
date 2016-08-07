@@ -1,6 +1,8 @@
 /**
  * Copyright (c) 2016 DeepCortex GmbH <legal@eventql.io>
  * Authors:
+ *   - Laura Schlimmer <laura@eventql.io>
+ *   - Christian Parpart <christianparpart@gmail.com>
  *   - Paul Asmuth <paul@eventql.io>
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -23,9 +25,66 @@
  */
 #include <string>
 #include <ctime>
-#include "unix_time.h"
-#include "wallclock.h"
+#include <sys/time.h>
+#include <sys/types.h>
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+#include "time.h"
 #include "stringutil.h"
+
+UnixTime WallClock::now() {
+  return UnixTime(WallClock::getUnixMicros());
+}
+
+uint64_t WallClock::unixSeconds() {
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec;
+}
+
+uint64_t WallClock::getUnixMillis() {
+  return unixMillis();
+}
+
+uint64_t WallClock::unixMillis() {
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000llu + tv.tv_usec / 1000llu;
+}
+
+uint64_t WallClock::getUnixMicros() {
+  return unixMicros();
+}
+
+uint64_t WallClock::unixMicros() {
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000000llu + tv.tv_usec;
+}
+
+uint64_t MonotonicClock::now() {
+#ifdef __MACH__
+  clock_serv_t cclock;
+  mach_timespec_t mts;
+  host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+  clock_get_time(cclock, &mts);
+  mach_port_deallocate(mach_task_self(), cclock);
+  return std::uint64_t(mts.tv_sec) * 1000000 + mts.tv_nsec / 1000;
+#else
+  timespec ts;
+  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+    logFatal("clock_gettime(CLOCK_MONOTONIC) failed");
+    abort();
+  } else {
+    return std::uint64_t(ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
+  }
+#endif
+}
 
 UnixTime::UnixTime() :
     utc_micros_(WallClock::unixMicros()) {}
