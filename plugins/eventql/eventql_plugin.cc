@@ -23,6 +23,7 @@
  */
 #include <deque>
 #include <thread>
+#include <condition_variable>
 #include <string.h>
 #include <curl/curl.h>
 #include <evcollect/evcollect.h>
