@@ -83,12 +83,7 @@ libevcollectcore_a_SOURCES = \
     evcollect.cc
 
 ################# BIN: evcollectd ####################
-evcollectd_SOURCES = \
-    plugins/eventql/eventql_plugin.h \
-    plugins/eventql/eventql_plugin.cc \
-    plugins/hostname/hostname_plugin.h \
-    plugins/hostname/hostname_plugin.cc \
-    evcollectd.cc
+evcollectd_SOURCES = evcollectd.cc
 
 evcollectd_LDADD = \
 		$(PCRE_LDFLAGS_) \

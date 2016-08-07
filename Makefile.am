@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = \
     . \
     src/evcollect \
-    src/evcollect/plugins/hostname
+    plugins/hostname
 
 EXTRA_DIST =                             \
   doc                                    \

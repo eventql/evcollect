@@ -38,7 +38,6 @@
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
 #include <evcollect/logfile.h>
-#include <evcollect/plugins/eventql/eventql_plugin.h>
 
 using namespace evcollect;
 
@@ -218,10 +217,6 @@ int main(int argc, const char** argv) {
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
   LogfileSourcePlugin::registerPlugin(plugin_map.get());
-
-  plugin_map->registerOutputPlugin(
-      "eventql",
-      std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
 
   PluginContext plugin_ctx;
   plugin_ctx.plugin_map = plugin_map.get();
