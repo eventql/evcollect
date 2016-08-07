@@ -302,6 +302,7 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
 
   std::string res_body;
   curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl_, CURLOPT_TIMEOUT_MS, http_timeout_ / kMicrosPerMilli);
   curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, body.c_str());
   curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, curl_write_cb);
   curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &res_body);
