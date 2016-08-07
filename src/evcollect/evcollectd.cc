@@ -191,6 +191,8 @@ int main(int argc, const char** argv) {
 
   /* load config */
   ProcessConfig conf;
+  conf.plugin_dir = flags.getString("plugin_path");
+
   {
     auto config_path = flags.getString("config");
     if (config_path.empty()) {

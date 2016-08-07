@@ -21,10 +21,12 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#include <unistd.h>
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin_map.h>
 #include <evcollect/plugin.h>
 #include <evcollect/config.h>
+#include <evcollect/util/stringutil.h>
 
 namespace evcollect {
 
@@ -43,7 +45,28 @@ PluginMap::~PluginMap() {
 ReturnCode PluginMap::loadPlugin(
     const std::string& plugin_name,
     PluginContext* ctx) const {
-  return evcollect::loadPlugin(ctx, plugin_name);
+  std::vector<std::string> path_candidates;
+  path_candidates.emplace_back(plugin_name);
+
+  if (plugin_name.find("/") == std::string::npos) {
+    path_candidates.emplace_back(config_->plugin_dir + plugin_name);
+    path_candidates.emplace_back(
+        config_->plugin_dir + "plugin_" + plugin_name + ".so");
+  }
+
+  for (const auto& path : path_candidates) {
+    if (access(path.c_str(), F_OK) != 0) {
+      continue;
+    }
+
+    return evcollect::loadPlugin(ctx, plugin_name);
+  }
+
+  return ReturnCode::error(
+      "EPLUGIN",
+      StringUtil::format(
+          "plugin not found -- tried $0",
+          StringUtil::join(path_candidates, ", ")));
 }
 
 void PluginMap::registerSourcePlugin(
