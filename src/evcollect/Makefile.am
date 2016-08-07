@@ -26,6 +26,8 @@ else
 PTHREAD_DEF =
 endif
 
+DL_LDFLAGS_ = -ldl
+
 if HAVE_SYSLOG_H
 SYSLOG_DEF = -DHAVE_SYSLOG_H=1
 else
@@ -89,6 +91,7 @@ evcollectd_LDADD = \
 		$(PCRE_LDFLAGS_) \
 		$(CURL_LDFLAGS_) \
 		$(PTHREAD_LDFLAGS_) \
+		$(DL_LDFLAGS_) \
 		libevcollectcore.a
 
 bin_PROGRAMS += evcollectd
