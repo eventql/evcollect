@@ -33,9 +33,7 @@ void FlagParser::defineFlag(
     kFlagType type,
     bool required,
     const char* shortopt /* = NULL */,
-    const char* default_value /* = NULL */,
-    const char* description /* = NULL */,
-    const char* placeholder /* = NULL */) {
+    const char* default_value /* = NULL */) {
 
   FlagState flag_state;
   flag_state.type = type;
@@ -43,8 +41,6 @@ void FlagParser::defineFlag(
   flag_state.longopt = longopt;
   flag_state.shortopt = shortopt;
   flag_state.default_value = default_value;
-  flag_state.description = description;
-  flag_state.placeholder = placeholder;
   flags_.emplace_back(flag_state);
 }
 

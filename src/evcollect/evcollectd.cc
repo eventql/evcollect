@@ -58,72 +58,56 @@ int main(int argc, const char** argv) {
       FlagParser::T_SWITCH,
       false,
       "?",
-      NULL,
-      "help",
-      "<help>");
+      NULL);
 
   flags.defineFlag(
       "version",
       FlagParser::T_SWITCH,
       false,
       "V",
-      NULL,
-      "print version",
-      "<switch>");
+      NULL);
 
   flags.defineFlag(
       "config",
       ::FlagParser::T_STRING,
       false,
       "c",
-      NULL,
-      "path to config file",
-      "<config_file>");
+      NULL);
 
   flags.defineFlag(
       "loglevel",
       FlagParser::T_STRING,
       false,
       NULL,
-      "INFO",
-      "loglevel",
-      "<level>");
+      "INFO");
 
   flags.defineFlag(
       "daemonize",
       FlagParser::T_SWITCH,
       false,
       NULL,
-      NULL,
-      "daemonize",
-      "<switch>");
+      NULL);
 
   flags.defineFlag(
       "pidfile",
       FlagParser::T_STRING,
       false,
       NULL,
-      NULL,
-      "pidfile",
-      "<path>");
+      NULL);
 
   flags.defineFlag(
       "log_to_syslog",
       FlagParser::T_SWITCH,
       false,
       NULL,
-      NULL,
-      "log to syslog",
-      "<switch>");
+      NULL);
 
   flags.defineFlag(
       "nolog_to_stderr",
       FlagParser::T_SWITCH,
       false,
       NULL,
-      NULL,
-      "don't log to stderr",
-      "<switch>");
+      NULL);
 
   /* parse flags */
   {

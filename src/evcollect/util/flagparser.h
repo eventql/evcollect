@@ -45,9 +45,7 @@ public:
       kFlagType type,
       bool required,
       const char* shortopt = NULL,
-      const char* default_value = NULL,
-      const char* description = NULL,
-      const char* placeholder = NULL);
+      const char* default_value = NULL);
 
   /**
    * Returns true if the flag is set and false otherwise
@@ -104,8 +102,6 @@ protected:
     const char* longopt;
     const char* shortopt;
     const char* default_value;
-    const char* description;
-    const char* placeholder;
     std::vector<std::string> values;
   };
 
