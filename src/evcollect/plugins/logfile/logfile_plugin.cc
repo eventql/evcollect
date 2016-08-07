@@ -27,6 +27,7 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <string.h>
 #include <unistd.h>
 #include <evcollect/util/stringutil.h>
 #include <evcollect/util/wallclock.h>
