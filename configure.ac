@@ -6,13 +6,12 @@ AC_INIT([evcollect],[0.1.0-dev],[authors@eventql.io],[evcollect])
 AM_INIT_AUTOMAKE([foreign subdir-objects serial-tests])
 AM_MAINTAINER_MODE([enable])
 AC_CONFIG_SRCDIR([configure.ac])
+AC_CONFIG_MACRO_DIR([m4])
 AM_SILENT_RULES([yes])
 
 # Check for build env
 AC_PROG_CC
 AC_PROG_CXX
-AC_PROG_RANLIB
-AM_PROG_AR
 AM_PROG_AS
 LT_INIT
 
