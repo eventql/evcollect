@@ -22,6 +22,8 @@
  * code of your own applications
  */
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin_map.h>
 #include <evcollect/plugin.h>
@@ -47,19 +49,19 @@ ReturnCode PluginMap::loadPlugin(
     PluginContext* ctx) const {
   std::vector<std::string> path_candidates;
   path_candidates.emplace_back(plugin_name);
-
   if (plugin_name.find("/") == std::string::npos) {
-    path_candidates.emplace_back(config_->plugin_dir + plugin_name);
+    path_candidates.emplace_back(config_->plugin_dir + "/" + plugin_name);
     path_candidates.emplace_back(
-        config_->plugin_dir + "plugin_" + plugin_name + ".so");
+        config_->plugin_dir + "/plugin_" + plugin_name + ".so");
   }
 
   for (const auto& path : path_candidates) {
-    if (access(path.c_str(), F_OK) != 0) {
+    struct stat s;
+    if (stat(path.c_str(), &s) != 0) {
       continue;
     }
 
-    return evcollect::loadPlugin(ctx, plugin_name);
+    return evcollect::loadPlugin(ctx, path);
   }
 
   return ReturnCode::error(
