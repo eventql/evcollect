@@ -27,10 +27,6 @@
 #include <evcollect/util/stringutil.h>
 #include <evcollect/evcollect.h>
 
-extern "C" {
-bool init_plugin(evcollect_ctx_t* ctx);
-}
-
 namespace evcollect {
 namespace plugin_hostname {
 
@@ -63,8 +59,8 @@ bool getNextEvent(void** userdata, evcollect_event_t* ev) {
 } // namespace plugins_hostname
 } // namespace evcollect
 
-bool init_plugin(evcollect_ctx_t* ctx) {
-
+bool evcollect_plugin_init(evcollect_ctx_t* ctx) {
+  printf("hostname pluigin init: %p\n", ctx);
   return true;
 }
 

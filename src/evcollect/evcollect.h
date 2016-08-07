@@ -77,5 +77,7 @@ void evcollect_event_set_data(
     const char* data,
     size_t size);
 
+__attribute__((visibility("default"))) bool evcollect_plugin_init(evcollect_ctx_t* ctx);
+
 }
 

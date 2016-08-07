@@ -21,6 +21,7 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#include <dlfcn.h>
 #include <evcollect/plugin.h>
 #include <evcollect/util/logging.h>
 
@@ -56,8 +57,43 @@ ReturnCode OutputPlugin::pluginAttach(
 
 void OutputPlugin::pluginDetach(void* userdata) {}
 
-ReturnCode loadPlugin(const std::string& plugin_path) {
+ReturnCode loadPlugin(std::string plugin_path) {
+  if (!StringUtil::beginsWith(plugin_path, "/") &&
+      !StringUtil::beginsWith(plugin_path, "./") &&
+      !StringUtil::beginsWith(plugin_path, "../")) {
+    plugin_path = "./" + plugin_path;
+  }
+
   logDebug("Loading plugin: $0", plugin_path);
+  void* dl = dlopen(plugin_path.c_str(), RTLD_NOW);
+  if (!dl) {
+    return ReturnCode::error(
+        "EIO",
+        "error while loading plugin: %s: %s",
+        plugin_path.c_str(),
+        dlerror());
+  }
+
+  auto dl_init = dlsym(dl, "evcollect_plugin_init");
+  if (!dl_init) {
+    dlclose(dl);
+    return ReturnCode::error(
+        "EIO",
+        "error while loading plugin: %s: %s [evcollect_plugin_init() not found]",
+        plugin_path.c_str(),
+        dlerror());
+  }
+
+  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(nullptr);
+  if (!rc) {
+    dlclose(dl);
+    return ReturnCode::error(
+        "EIO",
+        "error while loading plugin: %s",
+        plugin_path.c_str());
+  }
+
+  return ReturnCode::success();
 }
 
 } // namespace evcollect
