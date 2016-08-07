@@ -24,15 +24,21 @@
 #include <deque>
 #include <thread>
 #include <condition_variable>
+#include <string.h>
 #include <curl/curl.h>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/util/logging.h>
+#include <evcollect/util/base64.h>
+#include <evcollect/util/time.h>
 
 namespace evcollect {
 namespace plugin_eventql {
 
 class EventQLTarget {
 public:
+
+  static const size_t kDefaultHTTPTimeoutMicros = 30 * kMicrosPerSecond;
+  static const size_t kDefaultMaxQueueLength = 8192;
 
   EventQLTarget(
       const std::string& hostname,
@@ -43,6 +49,14 @@ public:
   void addRoute(
       const std::string& event_name_match,
       const std::string& target);
+
+  void setHTTPTimeout(uint64_t usecs);
+  void setMaxQueueLength(size_t queue_len);
+
+  void setAuthToken(const std::string& auth_token);
+  void setCredentials(
+      const std::string& username,
+      const std::string& password);
 
   ReturnCode emitEvent(const EventData& event);
 
@@ -73,6 +87,9 @@ protected:
 
   std::string hostname_;
   uint16_t port_;
+  std::string username_;
+  std::string password_;
+  std::string auth_token_;
   std::deque<EnqueuedEvent> queue_;
   mutable std::mutex mutex_;
   mutable std::condition_variable cv_;
@@ -82,6 +99,7 @@ protected:
   bool thread_shutdown_;
   std::vector<EventRouting> routes_;
   CURL* curl_;
+  uint64_t http_timeout_;
 };
 
 EventQLTarget::EventQLTarget(
@@ -89,9 +107,10 @@ EventQLTarget::EventQLTarget(
     uint16_t port) :
     hostname_(hostname),
     port_(port),
-    queue_max_length_(1024),
+    queue_max_length_(kDefaultMaxQueueLength),
     thread_running_(false),
-    curl_(nullptr) {
+    curl_(nullptr),
+    http_timeout_(kDefaultHTTPTimeoutMicros) {
   curl_ = curl_easy_init();
 }
 
@@ -108,6 +127,25 @@ void EventQLTarget::addRoute(
   r.event_name_match = event_name_match;
   r.target = target;
   routes_.emplace_back(r);
+}
+
+void EventQLTarget::setAuthToken(const std::string& auth_token) {
+  auth_token_ = auth_token;
+}
+
+void EventQLTarget::setCredentials(
+    const std::string& username,
+    const std::string& password) {
+  username_ = username;
+  password_ = password;
+}
+
+void EventQLTarget::setHTTPTimeout(uint64_t usecs) {
+  http_timeout_ = usecs;
+}
+
+void EventQLTarget::setMaxQueueLength(size_t queue_len) {
+  queue_max_length_ = queue_len;
 }
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
@@ -247,12 +285,30 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
     return ReturnCode::error("EIO", "curl_init() failed");
   }
 
+  struct curl_slist* req_headers = NULL;
+  req_headers = curl_slist_append(
+      req_headers,
+      "Content-Type: application/json; charset=utf-8");
+
+  if (!auth_token_.empty()) {
+    auto hdr = "Authorization: Token " + auth_token_;
+    req_headers = curl_slist_append(req_headers, hdr.c_str());
+  }
+
+  if (!username_.empty() || !password_.empty()) {
+    std::string hdr = "Authorization: Basic ";
+    hdr += Base64::encode(username_ + ":" + password_);
+    req_headers = curl_slist_append(req_headers, hdr.c_str());
+  }
+
   std::string res_body;
   curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl_, CURLOPT_TIMEOUT_MS, http_timeout_ / kMicrosPerMilli);
   curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, body.c_str());
   curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, curl_write_cb);
   curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &res_body);
   CURLcode curl_res = curl_easy_perform(curl_);
+  curl_slist_free_all(req_headers);
   if (curl_res != CURLE_OK) {
     return ReturnCode::error(
         "EIO",
@@ -312,6 +368,41 @@ ReturnCode EventQLPlugin::pluginAttach(
   }
 
   std::unique_ptr<EventQLTarget> target(new EventQLTarget(hostname, port));
+
+  std::string username;
+  std::string password;
+  config.get("username", &username);
+  config.get("password", &password);
+  if (!username.empty() || !password.empty()) {
+    target->setCredentials(username, password);
+  }
+
+  std::string auth_token;
+  if (config.get("auth_token", &auth_token)) {
+    target->setAuthToken(auth_token);
+  }
+
+  std::string http_timeout_opt;
+  if (config.get("http_timeout", &http_timeout_opt)) {
+    uint64_t http_timeout;
+    try {
+      http_timeout = std::stoull(http_timeout_opt);
+    } catch (...) {
+      return ReturnCode::error("EINVAL", "invalid value for http_timeout");
+    }
+    target->setHTTPTimeout(http_timeout);
+  }
+
+  std::string queue_maxlen_opt;
+  if (config.get("queue_maxlen", &queue_maxlen_opt)) {
+    uint64_t queue_maxlen;
+    try {
+      queue_maxlen = std::stoull(queue_maxlen_opt);
+    } catch (...) {
+      return ReturnCode::error("EINVAL", "invalid value for queue_maxlen");
+    }
+    target->setMaxQueueLength(queue_maxlen);
+  }
 
   std::vector<std::vector<std::string>> route_cfg;
   config.get("route", &route_cfg);

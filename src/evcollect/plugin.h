@@ -113,4 +113,7 @@ public:
 
 };
 
+ReturnCode loadPlugin(std::string plugin_path);
+
 } // namespace evcollect
+

@@ -25,20 +25,19 @@
 #include <unistd.h>
 #include <string.h>
 #include <evcollect/util/stringutil.h>
-#include "hostname_plugin.h"
+#include <evcollect/evcollect.h>
 
 namespace evcollect {
 namespace plugin_hostname {
 
-ReturnCode HostnamePlugin::pluginGetNextEvent(
-    void* userdata,
-    std::string* event_json) {
+bool getNextEvent(void** userdata, evcollect_event_t* ev) {
   std::string hostname;
   std::string hostname_fqdn;
 
   hostname.resize(1024);
   if (gethostname(&hostname[0], hostname.size()) == -1) {
-    return ReturnCode::error("SYSCALL_FAILED", "gethostname() failed");
+    return false;
+    //return ReturnCode::error("SYSCALL_FAILED", "gethostname() failed");
   } else {
     hostname.resize(strlen(hostname.data()));
   }
@@ -48,18 +47,20 @@ ReturnCode HostnamePlugin::pluginGetNextEvent(
     hostname_fqdn = std::string(h->h_name);
   }
 
-  *event_json = StringUtil::format(
-      R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
-      StringUtil::jsonEscape(hostname),
-      StringUtil::jsonEscape(hostname_fqdn));
+  //*event_json = StringUtil::format(
+  //    R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
+  //    StringUtil::jsonEscape(hostname),
+  //    StringUtil::jsonEscape(hostname_fqdn));
 
-  return ReturnCode::success();
+  return true;
 }
 
-bool HostnamePlugin::pluginHasPendingEvent(
-    void* userdata) {
-  return false;
-}
 
 } // namespace plugins_hostname
 } // namespace evcollect
+
+bool evcollect_plugin_init(evcollect_ctx_t* ctx) {
+  printf("hostname pluigin init: %p\n", ctx);
+  return true;
+}
+

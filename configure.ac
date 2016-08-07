@@ -14,17 +14,18 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AM_PROG_AR
 AM_PROG_AS
-
+LT_INIT
+]
 # Check for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h stdlib.h unistd.h syslog.h])
-AM_CONDITIONAL([HAVE_SYSLOG_H], [test $HAVE_SYSLOG_H = 1])
+AM_CONDITIONAL([HAVE_SYSLOG_H], [test x$HAVE_SYSLOG_H = x1])
 
 # Check for library functions
 AC_FUNC_MEMCMP
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([ftruncate memset mkdir strchr strerror strtol gethostbyname_r])
-AM_CONDITIONAL([HAVE_GETHOSTBYNAME_R], [test $HAVE_GETHOSTBYNAME_R = 1])
+AM_CONDITIONAL([HAVE_GETHOSTBYNAME_R], [test x$HAVE_GETHOSTBYNAME_R = x1])
 
 # Check for zlib
 HAVE_ZLIB=0
@@ -64,5 +65,5 @@ AM_CONDITIONAL([HAVE_ZLIB], [test $HAVE_ZLIB = 1])
 ACX_PTHREAD
 AM_CONDITIONAL([HAVE_PTHREAD], [test "x$acx_pthread_ok" = "xyes"])
 
-AC_CONFIG_FILES([Makefile src/evcollect/Makefile])
+AC_CONFIG_FILES([Makefile src/evcollect/Makefile src/evcollect/plugins/hostname/Makefile])
 AC_OUTPUT

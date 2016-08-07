@@ -22,24 +22,19 @@
  * code of your own applications
  */
 #pragma once
+#include <stdlib.h>
+#include <stdint.h>
 #include <string>
-#include <evcollect/evcollect.h>
-#include <evcollect/plugin.h>
 
-namespace evcollect {
-namespace plugin_hostname {
-
-class HostnamePlugin : public SourcePlugin {
+class Base64 {
 public:
 
-  ReturnCode pluginGetNextEvent(
-      void* userdata,
-      std::string* event_json) override;
+  static void encode(const std::string& in, std::string* out);
+  static void encode(const void* data, size_t size, std::string* out);
+  static std::string encode(const std::string& in);
+  static std::string encode(const void* data, size_t size);
 
-  bool pluginHasPendingEvent(
-      void* userdata) override;
+  static void decode(const std::string& in, std::string* out);
 
 };
 
-} // namespace plugins_hostname
-} // namespace evcollect

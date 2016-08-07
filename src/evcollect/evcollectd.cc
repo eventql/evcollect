@@ -38,7 +38,6 @@
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
-#include <evcollect/plugins/hostname/hostname_plugin.h>
 #include <evcollect/plugins/logfile/logfile_plugin.h>
 #include <evcollect/plugins/unix_stats/unix_stats_plugin.h>
 
@@ -84,6 +83,20 @@ int main(int argc, const char** argv) {
       false,
       "c",
       NULL);
+
+  flags.defineFlag(
+      "plugin",
+      ::FlagParser::T_STRING,
+      false,
+      "p",
+      NULL);
+
+  flags.defineFlag(
+      "plugin_path",
+      ::FlagParser::T_STRING,
+      false,
+      "P",
+      "/usr/local/lib/evcollect/plugins");
 
   flags.defineFlag(
       "loglevel",
@@ -159,6 +172,8 @@ int main(int argc, const char** argv) {
         "Usage: $ evcollectd [OPTIONS]\n\n"
         "   -s, --spool_dir <dir>     Where to store temporary files\n"
         "   -c, --config <file>       Load config from file\n"
+        "   -p, --plugin <path>       Load a plugin (.so)\n"
+        "   -P, --plugin_path <dir>   Set the plugin search path\n"
         "   --daemonize               Daemonize the server\n"
         "   --pidfile <file>          Write a PID file\n"
         "   --loglevel <level>        Minimum log level (default: INFO)\n"
@@ -204,9 +219,6 @@ int main(int argc, const char** argv) {
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
   plugin_map->registerSourcePlugin(
-      "hostname",
-      std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
-  plugin_map->registerSourcePlugin(
       "logfile",
       std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
   plugin_map->registerSourcePlugin(
@@ -216,6 +228,14 @@ int main(int argc, const char** argv) {
   plugin_map->registerOutputPlugin(
       "eventql",
       std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
+
+  for (const auto& plugin_path : flags.getStrings("plugin")) {
+    auto rc = loadPlugin(plugin_path);
+    if (!rc.isSuccess()) {
+      logFatal("error: $0", rc.getMessage());
+      return 1;
+    }
+  }
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();
