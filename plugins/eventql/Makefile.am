@@ -4,10 +4,17 @@ AM_CXXFLAGS = -std=c++0x -Wall -Wextra -Wdelete-non-virtual-dtor -g -fvisibility
 AM_CFLAGS = -std=c11 -Wall -pedantic -g
 AM_LDFLAGS = -fvisibility=hidden
 
-lib_LTLIBRARIES = plugin_eventql.la
+noinst_LTLIBRARIES = plugin_eventql.la
 
 plugin_eventql_la_LDFLAGS = -module -avoid-version -shared
 plugin_eventql_la_SOURCES = \
     eventql_plugin.cc
 
+PLUGINDIR=$(DESTDIR)$(libdir)/evcollect/plugins
 
+install-data-hook: $(noinst_LTLIBRARIES)
+	@for soname in `echo | $(EGREP) "^dlname=" $^ | $(SED) -e "s|^dlname='\(.*\)'|\1|"`; do  \
+		mkdir -p ${PLUGINDIR};                                                                 \
+		echo Installing $$soname to ${PLUGINDIR};                                              \
+		cp $(abs_builddir)/.libs/$$soname ${PLUGINDIR};                                        \
+	done
