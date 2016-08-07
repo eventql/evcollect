@@ -43,6 +43,82 @@ ReturnCode SourcePlugin::pluginAttach(
 
 void SourcePlugin::pluginDetach(void* userdata) {}
 
+DynamicSourcePlugin::DynamicSourcePlugin(
+    PluginContext* ctx,
+    evcollect_plugin_getnextevent_fn getnextevent_fn,
+    evcollect_plugin_hasnextevent_fn hasnextevent_fn,
+    evcollect_plugin_attach_fn attach_fn,
+    evcollect_plugin_detach_fn detach_fn,
+    evcollect_plugin_init_fn init_fn,
+    evcollect_plugin_free_fn free_fn) :
+    ctx_(ctx),
+    getnextevent_fn_(getnextevent_fn),
+    hasnextevent_fn_(hasnextevent_fn),
+    attach_fn_(attach_fn),
+    detach_fn_(detach_fn),
+    init_fn_(init_fn),
+    free_fn_(free_fn) {}
+
+ReturnCode DynamicSourcePlugin::pluginInit(const PluginConfig& cfg) {
+  if (!init_fn_ || init_fn_(ctx_, &cfg)) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error(
+        "EPLUGIN",
+        "pluginInit failed: %s",
+        ctx_->error.c_str());
+  }
+}
+
+void DynamicSourcePlugin::pluginFree() {
+  if (free_fn_) {
+    free_fn_(ctx_);
+  }
+}
+
+ReturnCode DynamicSourcePlugin::pluginAttach(
+    const PropertyList& config,
+    void** userdata) {
+  if (!attach_fn_ || attach_fn_(ctx_, &config, userdata)) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error(
+        "EPLUGIN",
+        "pluginAttach failed: %s",
+        ctx_->error.c_str());
+  }
+}
+
+void DynamicSourcePlugin::pluginDetach(void* userdata) {
+  if (detach_fn_) {
+    detach_fn_(ctx_, userdata);
+  }
+}
+
+ReturnCode DynamicSourcePlugin::pluginGetNextEvent(
+    void* userdata,
+    std::string* data) {
+  EventData evdata;
+
+  if (getnextevent_fn_(ctx_, userdata, &evdata)) {
+    *data = evdata.event_data;
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error(
+        "EPLUGIN",
+        "pluginGetNextEvent failed: %s",
+        ctx_->error.c_str());
+  }
+}
+
+bool DynamicSourcePlugin::pluginHasPendingEvent(void* userdata) {
+  if (!hasnextevent_fn_) {
+    return false;
+  } else {
+    return hasnextevent_fn_(ctx_, userdata);
+  }
+}
+
 ReturnCode OutputPlugin::pluginInit(const PluginConfig& cfg) {
   return ReturnCode::success();
 }
@@ -57,6 +133,69 @@ ReturnCode OutputPlugin::pluginAttach(
 }
 
 void OutputPlugin::pluginDetach(void* userdata) {}
+
+DynamicOutputPlugin::DynamicOutputPlugin(
+    PluginContext* ctx,
+    evcollect_plugin_emitevent_fn emitevent_fn,
+    evcollect_plugin_attach_fn attach_fn,
+    evcollect_plugin_detach_fn detach_fn,
+    evcollect_plugin_init_fn init_fn,
+    evcollect_plugin_free_fn free_fn) :
+    ctx_(ctx),
+    emitevent_fn_(emitevent_fn),
+    attach_fn_(attach_fn),
+    detach_fn_(detach_fn),
+    init_fn_(init_fn),
+    free_fn_(free_fn) {}
+
+ReturnCode DynamicOutputPlugin::pluginInit(const PluginConfig& cfg) {
+  if (!init_fn_ || init_fn_(ctx_, &cfg)) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error(
+        "EPLUGIN",
+        "pluginInit failed: %s",
+        ctx_->error.c_str());
+  }
+}
+
+void DynamicOutputPlugin::pluginFree() {
+  if (free_fn_) {
+    free_fn_(ctx_);
+  }
+}
+
+ReturnCode DynamicOutputPlugin::pluginAttach(
+    const PropertyList& config,
+    void** userdata) {
+  if (!attach_fn_ || attach_fn_(ctx_, &config, userdata)) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error(
+        "EPLUGIN",
+        "pluginAttach failed: %s",
+        ctx_->error.c_str());
+  }
+}
+
+void DynamicOutputPlugin::pluginDetach(void* userdata) {
+  if (detach_fn_) {
+    detach_fn_(ctx_, userdata);
+  }
+}
+
+ReturnCode DynamicOutputPlugin::pluginEmitEvent(
+    void* userdata,
+    const EventData& event) {
+  if (emitevent_fn_(ctx_, userdata, &event)) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error(
+        "EPLUGIN",
+        "pluginEmitEvent failed: %s",
+        ctx_->error.c_str());
+  }
+}
 
 ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
   if (!StringUtil::beginsWith(plugin_path, "/") &&
@@ -119,6 +258,7 @@ void evcollect_source_plugin_register(
       plugin_name,
       std::unique_ptr<evcollect::SourcePlugin>(
           new evcollect::DynamicSourcePlugin(
+              ctx_,
               getnextevent_fn,
               hasnextevent_fn,
               attach_fn,
@@ -140,6 +280,7 @@ void evcollect_output_plugin_register(
       plugin_name,
       std::unique_ptr<evcollect::OutputPlugin>(
           new evcollect::DynamicOutputPlugin(
+              ctx_,
               emitevent_fn,
               attach_fn,
               detach_fn,

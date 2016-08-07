@@ -32,7 +32,7 @@ namespace plugin_hostname {
 
 bool getEvent(
     evcollect_ctx_t* ctx,
-    void** userdata,
+    void* userdata,
     evcollect_event_t* ev) {
   std::string hostname;
   std::string hostname_fqdn;
