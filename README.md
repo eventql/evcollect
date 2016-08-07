@@ -33,20 +33,23 @@ config:
     output kafka1 plugin kafka
         host 127.0.0.1
         port 1234
+        route * %E              # submit all events into topic=<event name>
 
     # submit events to eventql
     output eventql1 plugin evenql
         host 127.0.0.1
         port 9175
+        route * mydb/%E         # store all events into db=mydb and table=<event name>
 
-    # normal event containing system load statistics. submitted every 30s
+    # event containing system load statistics. emitted every 30s
     event cluster.system_stats interval 30s
        source plugin linux.systats
 
+    # event containing custom application statistics. emitted every 30s
     event cluster.app_stats 30s
        source shell /usr/local/bin/app_stats.sh
 
-    # http access log. "streaming event" -- events submitted as they are written
+    # submit http access log -- events are emitted as lines are written to the file
     event logs.access_log stream
       source logfile /var/log/nginx/access.log
 
@@ -125,7 +128,20 @@ daemon process) and `evcollectctl` (a command line util.)
 
 The main daemon process.
 
-    $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
+    Usage: $ evcollectd [OPTIONS]
+
+       -s, --spool_dir <dir>     Where to store temporary files
+       -c, --config <file>       Load config from file
+       --daemonize               Daemonize the server
+       --pidfile <file>          Write a PID file
+       --loglevel <level>        Minimum log level (default: INFO)
+       --[no]log_to_syslog       Do[n't] log to syslog
+       --[no]log_to_stderr       Do[n't] log to stderr
+       -?, --help                Display this help text and exit
+       -v, --version             Display the version of this binary and exit
+
+    Examples:
+       $ evcollectd --log_to_syslog --daemonize --config /etc/evcollect.conf
 
 
 #### evcollectctl list

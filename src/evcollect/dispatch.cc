@@ -77,8 +77,6 @@ ReturnCode Dispatch::emitEvent(
 }
 
 ReturnCode Dispatch::deliverEvent(const EventData& evdata) {
-  logInfo("EVENT: $0 => $1", evdata.event_name, evdata.event_data);
-
   auto rc_aggr = ReturnCode::success();
   for (const auto& t : targets_) {
     auto rc = t->plugin->pluginEmitEvent(t->userdata, evdata);
@@ -136,7 +134,7 @@ ReturnCode Dispatch::run() {
     auto rc = runOnce(job);
     if (!rc.isSuccess()) {
       logError(
-          "Error while fetching event from '$0': $1",
+          "Error while processing event '$0': $1",
           job->event_name,
           rc.getMessage());
     }
@@ -147,7 +145,7 @@ ReturnCode Dispatch::run() {
     job->next_tick = job->next_tick + job->interval_micros;
     if (job->next_tick < now) {
       logWarning(
-          "Fetching event data for '$0' took longer than the configured " \
+          "Processing event '$0' took longer than the configured " \
           "interval, skipping samples",
           job->event_name);
 

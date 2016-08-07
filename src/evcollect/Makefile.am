@@ -56,9 +56,13 @@ evcollectd_SOURCES = \
     util/time.h \
     util/time_impl.h \
     util/time.cc \
+    plugins/eventql/eventql_plugin.h \
+    plugins/eventql/eventql_plugin.cc \
     plugins/hostname/hostname_plugin.h \
     plugins/hostname/hostname_plugin.cc \
     plugins/logfile/logfile_plugin.h \
+    config.h \
+    config.cc \
     plugins/logfile/logfile_plugin.cc \
     plugins/unix_stats/unix_stats_plugin.h \
     plugins/unix_stats/unix_stats_plugin.cc \

@@ -25,7 +25,7 @@
 
 namespace evcollect {
 
-ReturnCode SourcePlugin::pluginInit() {
+ReturnCode SourcePlugin::pluginInit(const PluginConfig& cfg) {
   return ReturnCode::success();
 }
 
@@ -38,7 +38,21 @@ ReturnCode SourcePlugin::pluginAttach(
   return ReturnCode::success();
 }
 
-void SourcePlugin::pluginDetach(
-    void* userdata) {}
+void SourcePlugin::pluginDetach(void* userdata) {}
+
+ReturnCode OutputPlugin::pluginInit(const PluginConfig& cfg) {
+  return ReturnCode::success();
+}
+
+void OutputPlugin::pluginFree() {}
+
+ReturnCode OutputPlugin::pluginAttach(
+    const PropertyList& config,
+    void** userdata) {
+  *userdata = nullptr;
+  return ReturnCode::success();
+}
+
+void OutputPlugin::pluginDetach(void* userdata) {}
 
 } // namespace evcollect

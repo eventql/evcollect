@@ -28,6 +28,7 @@
 #include <iostream>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/file.h>
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/evcollect.h>
@@ -35,6 +36,7 @@
 #include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
+#include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/plugins/hostname/hostname_plugin.h>
 #include <evcollect/plugins/logfile/logfile_plugin.h>
 #include <evcollect/plugins/unix_stats/unix_stats_plugin.h>
@@ -66,6 +68,13 @@ int main(int argc, const char** argv) {
       FlagParser::T_SWITCH,
       false,
       "V",
+      NULL);
+
+  flags.defineFlag(
+      "spool_dir",
+      ::FlagParser::T_STRING,
+      false,
+      "s",
       NULL);
 
   flags.defineFlag(
@@ -147,6 +156,7 @@ int main(int argc, const char** argv) {
   if (flags.isSet("help")) {
     std::cerr <<
         "Usage: $ evcollectd [OPTIONS]\n\n"
+        "   -s, --spool_dir <dir>     Where to store temporary files\n"
         "   -c, --config <file>       Load config from file\n"
         "   --daemonize               Daemonize the server\n"
         "   --pidfile <file>          Write a PID file\n"
@@ -164,28 +174,27 @@ int main(int argc, const char** argv) {
 
   /* load config */
   ProcessConfig conf;
-
-  // tmp
   {
-    conf.event_bindings.emplace_back();
-    auto& b = conf.event_bindings.back();
-    b.event_name = "sys.alive";
-    b.interval_micros = 1000000;
-    b.sources.emplace_back();
-    auto& s = b.sources.back();
-    s.plugin_name = "hostname";
+    auto config_path = flags.getString("config");
+    if (config_path.empty()) {
+      logFatal("error: --config is required");
+      return 1;
+    }
+
+    auto rc = loadConfig(config_path, &conf);
+    if (!rc.isSuccess()) {
+      logFatal("invalid config: $0", rc.getMessage());
+      return 1;
+    }
   }
-  {
-    conf.event_bindings.emplace_back();
-    auto& b = conf.event_bindings.back();
-    b.event_name = "logs.access_log";
-    b.interval_micros = 1000000;
-    b.sources.emplace_back();
 
-    auto& s = b.sources.back();
-    s.plugin_name = "logfile";
-    s.properties.properties.emplace_back(
-        std::make_pair("regex", "(?<fuu>[^\|]*)?(?<bar>.*)"));
+  if (flags.isSet("spool_dir")) {
+    conf.spool_dir = flags.getString("spool_dir");
+  }
+
+  if (conf.spool_dir.empty()) {
+    logFatal("error: --spool_dir is required");
+    return 1;
   }
   {
     conf.event_bindings.emplace_back();
@@ -198,7 +207,7 @@ int main(int argc, const char** argv) {
   }
 
   /* load plugins */
-  std::unique_ptr<PluginMap> plugin_map(new PluginMap());
+  std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
   plugin_map->registerSourcePlugin(
       "hostname",
       std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
@@ -208,6 +217,10 @@ int main(int argc, const char** argv) {
   plugin_map->registerSourcePlugin(
       "unix_stats",
       std::unique_ptr<SourcePlugin>(new plugin_unix_stats::UnixStatsPlugin()));
+
+  plugin_map->registerOutputPlugin(
+      "eventql",
+      std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();
@@ -277,18 +290,41 @@ int main(int argc, const char** argv) {
   }
 
   /* write pidfile */
-  //ScopedPtr<FileLock> pidfile_lock;
-  //if (process_config->hasProperty("server.pidfile")) {
-  //  auto pidfile_path = process_config->getString("server.pidfile").get();
-  //  pidfile_lock = mkScoped(new FileLock(pidfile_path));
-  //  pidfile_lock->lock(false);
+  int pidfile_fd = -1;
+  auto pidfile_path = flags.getString("pidfile");
+  if (rc.isSuccess() && !pidfile_path.empty()) {
+    pidfile_fd = open(
+        pidfile_path.c_str(),
+        O_WRONLY | O_CREAT,
+        0666);
 
-  //  auto pidfile = File::openFile(
-  //      pidfile_path,
-  //      File::O_WRITE | File::O_CREATEOROPEN | File::O_TRUNCATE);
+    if (pidfile_fd < 0) {
+      rc = ReturnCode::error(
+          "IO_ERROR",
+          "writing pidfile failed: %s",
+          std::strerror(errno));
+    }
 
-  //  pidfile.write(StringUtil::toString(getpid()));
-  //}
+    if (rc.isSuccess() && flock(pidfile_fd, LOCK_EX | LOCK_NB) != 0) {
+      close(pidfile_fd);
+      pidfile_fd = -1;
+      rc = ReturnCode::error("IO_ERROR", "locking pidfile failed");
+    }
+
+    if (rc.isSuccess() && ftruncate(pidfile_fd, 0) != 0) {
+      close(pidfile_fd);
+      pidfile_fd = -1;
+      rc = ReturnCode::error("IO_ERROR", "writing pidfile failed");
+    }
+
+    auto pid = StringUtil::toString(getpid());
+    if (rc.isSuccess() &&
+        write(pidfile_fd, pid.data(), pid.size()) != pid.size()) {
+      close(pidfile_fd);
+      pidfile_fd = -1;
+      rc = ReturnCode::error("IO_ERROR", "writing pidfile failed");
+    }
+  }
 
   /* main dispatch loop */
   if (rc.isSuccess()) {
@@ -309,8 +345,6 @@ int main(int argc, const char** argv) {
   }
 
   /* shutdown */
-  logInfo("Exiting...");
-
   for (auto& binding : event_bindings) {
     for (auto& source : binding->sources) {
       source.plugin->pluginDetach(source.userdata);
@@ -321,13 +355,16 @@ int main(int argc, const char** argv) {
     binding->plugin->pluginDetach(binding->userdata);
   }
 
+  logInfo("Exiting...");
+
   delete dispatch;
   plugin_map.reset(nullptr);
 
-  //if (pidfile_lock.get()) {
-  //  pidfile_lock.reset(nullptr);
-  //  FileUtil::rm(process_config->getString("server.pidfile").get());
-  //}
+  if (pidfile_fd > 0) {
+    unlink(pidfile_path.c_str());
+    flock(pidfile_fd, LOCK_UN);
+    close(pidfile_fd);
+  }
 
   return rc.isSuccess() ? 0 : 1;
 }

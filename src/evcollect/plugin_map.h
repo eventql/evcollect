@@ -30,10 +30,12 @@
 namespace evcollect {
 class SourcePlugin;
 class OutputPlugin;
+struct ProcessConfig;
 
 class PluginMap {
 public:
 
+  PluginMap(const ProcessConfig* config);
   ~PluginMap();
 
   void registerSourcePlugin(
@@ -64,6 +66,7 @@ protected:
     bool plugin_initialized;
   };
 
+  const ProcessConfig* config_;
   mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
   mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
 };
