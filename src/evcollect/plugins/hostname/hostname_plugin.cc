@@ -44,7 +44,9 @@ ReturnCode HostnamePlugin::pluginGetNextEvent(
   }
 
   struct hostent* h = gethostbyname(hostname.c_str());
-  hostname_fqdn = std::string(h->h_name);
+  if (h) {
+    hostname_fqdn = std::string(h->h_name);
+  }
 
   *event_json = StringUtil::format(
       R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
