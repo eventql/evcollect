@@ -71,7 +71,7 @@ protected:
 };
 
 EventQLTarget::EventQLTarget() :
-    queue_max_length_(10),
+    queue_max_length_(1024),
     thread_running_(false) {}
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
@@ -114,8 +114,8 @@ ReturnCode EventQLTarget::getTargetTables(
 ReturnCode EventQLTarget::enqueueEvent(const EnqueuedEvent& event) {
   std::unique_lock<std::mutex> lk(mutex_);
 
-  if (queue_.size() >= queue_max_length_) {
-    return ReturnCode::error("QUEUE_FULL", "EventQL upload queue is full");
+  while (queue_.size() >= queue_max_length_) {
+    cv_.wait(lk);
   }
 
   queue_.emplace_back(event);

@@ -136,7 +136,7 @@ ReturnCode Dispatch::run() {
     auto rc = runOnce(job);
     if (!rc.isSuccess()) {
       logError(
-          "Error while proocessing event '$0': $1",
+          "Error while processing event '$0': $1",
           job->event_name,
           rc.getMessage());
     }
