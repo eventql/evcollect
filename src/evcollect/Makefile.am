@@ -81,6 +81,6 @@ evcollectd_SOURCES = \
     evcollect.cc \
     evcollectd.cc
 
-evcollectd_LDFLAGS = $(PCRE_LDFLAGS_) $(CURL_LDFLAGS_) $(PTHREAD_LDFLAGS_)
+evcollectd_LDADD = $(PCRE_LDFLAGS_) $(CURL_LDFLAGS_) $(PTHREAD_LDFLAGS_)
 bin_PROGRAMS += evcollectd
 
