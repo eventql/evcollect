@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <evcollect/util/stringutil.h>
 
 enum class LogLevel {
