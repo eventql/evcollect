@@ -58,26 +58,26 @@ ReturnCode loadConfig(
             std::vector<std::string> { "(?<fuu>[^\\|]*)?(?<bar>.*)" }));
   }
 
-  {
-    conf->target_bindings.emplace_back();
-    auto& b = conf->target_bindings.back();
-    b.plugin_name = "eventql";
+  //{
+  //  conf->target_bindings.emplace_back();
+  //  auto& b = conf->target_bindings.back();
+  //  b.plugin_name = "eventql";
 
-    b.properties.properties.emplace_back(
-        std::make_pair(
-            "route",
-            std::vector<std::string> { "logs.access_log", "test/logs.access_log" }));
+  //  b.properties.properties.emplace_back(
+  //      std::make_pair(
+  //          "route",
+  //          std::vector<std::string> { "logs.access_log", "test/logs.access_log" }));
 
-    b.properties.properties.emplace_back(
-        std::make_pair(
-            "route",
-            std::vector<std::string> { "sys.alive", "test/sys.alive" }));
+  //  b.properties.properties.emplace_back(
+  //      std::make_pair(
+  //          "route",
+  //          std::vector<std::string> { "sys.alive", "test/sys.alive" }));
 
-    b.properties.properties.emplace_back(
-        std::make_pair(
-            "route",
-            std::vector<std::string> { "sys.alive", "test/sys.alive.rollup" }));
-  }
+  //  b.properties.properties.emplace_back(
+  //      std::make_pair(
+  //          "route",
+  //          std::vector<std::string> { "sys.alive", "test/sys.alive.rollup" }));
+  //}
 
   return ReturnCode::success();
 }
