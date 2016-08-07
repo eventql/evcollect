@@ -23,6 +23,8 @@
  */
 #pragma once
 #include <string>
+#include <mutex>
+#include <condition_variable>
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin.h>
 

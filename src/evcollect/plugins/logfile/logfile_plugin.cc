@@ -364,9 +364,14 @@ ReturnCode LogfileSource::writeCheckpoint() {
         checkpoint_filename_.c_str());
   }
 
-  write(fd, cdata, sizeof(cdata));
-  close(fd);
+  if (write(fd, cdata, sizeof(cdata)) < 0) {
+    return ReturnCode::error(
+        "IOERR",
+        "write('%s') failed",
+        checkpoint_filename_.c_str());
+  }
 
+  close(fd);
   return ReturnCode::success();
 }
 

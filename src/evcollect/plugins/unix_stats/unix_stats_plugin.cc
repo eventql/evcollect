@@ -46,13 +46,49 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
   std::string hostname;
   std::string hostname_fqdn;
 
+  event_json->append("([");
+
   auto mount_info = getMountInfo();
+  for (size_t i = 0; i < mount_info.size(); ++i) {
+    if (i > 0) {
+      event_json->append(",");
+    }
 
+    struct statvfs buf;
+    if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
+      continue;
+    }
 
-  *event_json = StringUtil::format(
-      R"({ "test": "$0", "blah": "$1" })",
-      StringUtil::jsonEscape(hostname),
-      StringUtil::jsonEscape(hostname_fqdn));
+    auto total = (double) (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto available = (double) (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto used = total - available;
+
+    auto ifree = buf.f_favail;
+    auto iused = buf.f_files - ifree;
+
+    event_json->append(StringUtil::format(
+        R"({ 
+          "filesystem": "$0",
+          "total": $1,
+          "used": $2,
+          "available": $3,
+          "capacity": $4,
+          "iused": $5,
+          "ifree": $6,
+          "mount_point": "$7"
+        })",
+        StringUtil::jsonEscape(mount_info[i].device),
+        total,
+        used,
+        available,
+        used / total,
+        iused,
+        ifree,
+        StringUtil::jsonEscape(mount_info[i].mount_point)));
+  }
+
+  event_json->append("])");
+
   return ReturnCode::success();
 }
 
@@ -66,7 +102,12 @@ std::vector<UnixStatsPlugin::MountInfo> mount_info;
 
 #ifdef linux
   auto file = setmentent("/etc/fstab", "r");
-  auto mntent = getmntent(file);
+  
+  while (auto mntent = getmntent(file)) {
+    printf("filesystemt: %s, mounted on: %s", mntent.mnt_fsname, mntent.mnt_dir);
+  }
+
+    
 
 
 #elif __APPLE__
@@ -76,7 +117,7 @@ std::vector<UnixStatsPlugin::MountInfo> mount_info;
   for (size_t i = 0; i < mntsize; ++i) {
     UnixStatsPlugin::MountInfo mn_info = {
       .device = mntbuf[i].f_mntfromname,
-      .mount_point = mntbuf[i].f_mntonname //FIXME add type
+      .mount_point = mntbuf[i].f_mntonname
     };
 
     mount_info.emplace_back(mn_info);
