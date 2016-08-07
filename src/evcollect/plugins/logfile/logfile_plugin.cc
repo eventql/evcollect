@@ -32,6 +32,7 @@
 #include <evcollect/util/stringutil.h>
 #include <evcollect/util/time.h>
 #include <evcollect/util/logging.h>
+#include <evcollect/util/sha1.h>
 #include "logfile_plugin.h"
 #include <pcre.h>
 
@@ -40,7 +41,11 @@ namespace plugin_logfile {
 
 class LogfileSource {
 public:
-  LogfileSource(const std::string& filename);
+
+  LogfileSource(
+      const std::string& filename,
+      const std::string& spool_dir);
+
   ~LogfileSource();
 
   ReturnCode setRegex(const std::string& regex);
@@ -75,9 +80,9 @@ protected:
 };
 
 LogfileSource::LogfileSource(
-    const std::string& filename) :
+    const std::string& filename,
+    const std::string& spool_dir) :
     filename_(filename),
-    checkpoint_filename_(filename + ".coff"),
     pcre_handle_(nullptr),
     inode_(0),
     offset_(0),
@@ -86,7 +91,10 @@ LogfileSource::LogfileSource(
     checkpoint_offset_(0),
     checkpoint_interval_micros_(10 * kMicrosPerSecond),
     last_checkpoint_(0),
-    line_buf_maxsize_(8192) {}
+    line_buf_maxsize_(8192) {
+  auto filename_hash = SHA1::compute(filename_);
+  checkpoint_filename_ = spool_dir + "/log_" + filename_hash.toString();
+}
 
 LogfileSource::~LogfileSource() {
   if (pcre_handle_) {
@@ -362,10 +370,22 @@ ReturnCode LogfileSource::writeCheckpoint() {
   return ReturnCode::success();
 }
 
+ReturnCode LogfileSourcePlugin::pluginInit(const PluginConfig& config) {
+  spool_dir_ = config.spool_dir;
+  return ReturnCode::success();
+}
+
 ReturnCode LogfileSourcePlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
-  std::unique_ptr<LogfileSource> logfile(new LogfileSource("/tmp/log"));
+  std::string filename;
+  if (!config.get("logfile", &filename) && filename.empty()) {
+    return ReturnCode::error("EINVAL", "logfile needs a filename");
+  }
+
+  std::unique_ptr<LogfileSource> logfile(
+      new LogfileSource(filename, spool_dir_));
+
   logfile->readCheckpoint();
 
   std::string regex;

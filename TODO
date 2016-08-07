@@ -1,5 +1,6 @@
-- [ ] bind/listen monitor socket
-- [ ] monitor connection impl
+- [ ] route wildcards + target format strings
+- [ ] write spool file in eventql upload
+- [ ] bind/listen/handle monitor socket
 - [ ] evcollectctl
 - [ ] mergeEvents impl
 - [ ] statsd plugin

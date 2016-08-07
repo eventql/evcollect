@@ -49,6 +49,11 @@ ReturnCode loadConfig(
     s.plugin_name = "logfile";
     s.properties.properties.emplace_back(
         std::make_pair(
+            "logfile",
+            std::vector<std::string> { "/tmp/log" }));
+
+    s.properties.properties.emplace_back(
+        std::make_pair(
             "regex",
             std::vector<std::string> { "(?<fuu>[^\\|]*)?(?<bar>.*)" }));
   }

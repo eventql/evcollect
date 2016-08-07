@@ -32,6 +32,9 @@ namespace plugin_logfile {
 class LogfileSourcePlugin : public SourcePlugin {
 public:
 
+  ReturnCode pluginInit(
+      const PluginConfig& config) override;
+
   ReturnCode pluginAttach(
       const PropertyList& config,
       void** userdata) override;
@@ -46,6 +49,8 @@ public:
   bool pluginHasPendingEvent(
       void* userdata) override;
 
+protected:
+  std::string spool_dir_;
 };
 
 } // namespace plugins_logfile
