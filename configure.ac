@@ -65,5 +65,5 @@ AM_CONDITIONAL([HAVE_ZLIB], [test $HAVE_ZLIB = 1])
 ACX_PTHREAD
 AM_CONDITIONAL([HAVE_PTHREAD], [test "x$acx_pthread_ok" = "xyes"])
 
-AC_CONFIG_FILES([Makefile src/evcollect/Makefile plugins/hostname/Makefile])
+AC_CONFIG_FILES([Makefile src/evcollect/Makefile plugins/hostname/Makefile plugins/eventql/Makefile])
 AC_OUTPUT
