@@ -328,7 +328,7 @@ int main(int argc, const char** argv) {
   }
 
   if (!rc.isSuccess()) {
-    logFatal(rc.getMessage());
+    logFatal("error: $0", rc.getMessage());
   }
 
   /* shutdown */
