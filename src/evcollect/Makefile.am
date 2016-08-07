@@ -81,8 +81,7 @@ libevcollectcore_a_SOURCES = \
     logfile.cc \
     dispatch.h \
     dispatch.cc \
-    evcollect.h \
-    evcollect.cc
+    evcollect.h
 
 ################# BIN: evcollectd ####################
 evcollectd_SOURCES = evcollectd.cc

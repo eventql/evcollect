@@ -85,4 +85,79 @@ ReturnCode loadConfig(
   return ReturnCode::success();
 }
 
+bool PropertyList::get(const std::string& key, std::string* out) const {
+  for (const auto& p : properties) {
+    if (p.first != key) {
+      continue;
+    }
+
+    if (p.second.empty()) {
+      continue;
+    }
+
+    *out = p.second.front();
+    return true;
+  }
+
+  return false;
+}
+
+bool PropertyList::get(const std::string& key, const char** out) const {
+  for (const auto& p : properties) {
+    if (p.first != key) {
+      continue;
+    }
+
+    if (p.second.empty()) {
+      continue;
+    }
+
+    *out = p.second.front().c_str();
+    return true;
+  }
+
+  return false;
+}
+
+bool PropertyList::getv(
+    const std::string& key,
+    size_t i,
+    size_t j,
+    const char** out) const {
+  for (const auto& p : properties) {
+    if (p.first != key) {
+      continue;
+    }
+
+    if (i > 0) {
+      --i;
+      continue;
+    }
+
+    if (j + 1 > p.second.size()) {
+      return false;
+    } else {
+      *out = p.second[j].c_str();
+      return true;
+    }
+  }
+
+  return false;
+}
+
+size_t PropertyList::get(
+    const std::string& key,
+    std::vector<std::vector<std::string>>* out) const {
+  size_t cnt = 0;
+
+  for (const auto& p : properties) {
+    if (p.first == key) {
+      out->push_back(p.second);
+      ++cnt;
+    }
+  }
+
+  return cnt;
+}
+
 } // namespace evcollect
