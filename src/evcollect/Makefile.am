@@ -45,11 +45,11 @@ AM_CXXFLAGS = -DEVCOLLECT_VERSION=\"v@PACKAGE_VERSION@\" $(PTHREAD_CFLAGS) $(PTH
 AM_CFLAGS =  $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOSTBYNAME_R_DEF) -std=c11 -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -Wall -pedantic -g
 AM_LDFLAGS = $(PTHREAD_CFLAGS)
 
-################# LIB: evcollectcore #################
+################# LIB: libevcollectcore #################
 
-noinst_LIBRARIES += evcollectcore.a
+noinst_LIBRARIES += libevcollectcore.a
 
-evcollectcore_a_SOURCES = \
+libevcollectcore_a_SOURCES = \
 		util/ansicolor.h \
 		util/ansicolor.cc \
     util/logging.h \
@@ -94,15 +94,14 @@ evcollectd_LDADD = \
 		$(PCRE_LDFLAGS_) \
 		$(CURL_LDFLAGS_) \
 		$(PTHREAD_LDFLAGS_) \
-		evcollectcore.a
+		libevcollectcore.a
 
 bin_PROGRAMS += evcollectd
 
-####### testing_main.a ################################################
+####### libtesting_main.a ################################################
 
-noinst_LIBRARIES += testing_main.a
-testing_main_a_SOURCES = util/testing_main.cc
-#testing_main_a_LIBADD = libXzero.a
+noinst_LIBRARIES += libtesting_main.a
+libtesting_main_a_SOURCES = util/testing_main.cc
 
 ####### TESTS #################################################################
 
@@ -113,8 +112,8 @@ evcollect_test_LDADD = \
 		$(PCRE_LDFLAGS_) \
 		$(CURL_LDFLAGS_) \
 		$(PTHREAD_LDFLAGS_) \
-		evcollectcore.a \
-		testing_main.a
+		libevcollectcore.a \
+		libtesting_main.a
 
 evcollect_test_SOURCES = \
 		configparser_test.cc
