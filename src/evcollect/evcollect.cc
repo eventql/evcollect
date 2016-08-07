@@ -42,6 +42,23 @@ bool PropertyList::get(const std::string& key, std::string* out) const {
   return false;
 }
 
+bool PropertyList::get(const std::string& key, const char** out) const {
+  for (const auto& p : properties) {
+    if (p.first != key) {
+      continue;
+    }
+
+    if (p.second.empty()) {
+      continue;
+    }
+
+    *out = p.second.front().c_str();
+    return true;
+  }
+
+  return false;
+}
+
 size_t PropertyList::get(
     const std::string& key,
     std::vector<std::vector<std::string>>* out) const {

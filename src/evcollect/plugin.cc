@@ -244,6 +244,40 @@ void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
   ctx_->error = std::string(error);
 }
 
+bool evcollect_plugin_getcfg(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    const char** value) {
+  auto cfg_ = static_cast<const evcollect::PropertyList*>(cfg);
+  return cfg_->get(key, value);
+}
+
+void evcollect_event_getname(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size) {
+  auto ev_ = static_cast<const evcollect::EventData*>(ev);
+  *data = ev_->event_name.data();
+  *size = ev_->event_name.size();
+}
+
+void evcollect_event_setname(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size) {
+  auto ev_ = static_cast<evcollect::EventData*>(ev);
+  ev_->event_name = std::string(data, size);
+}
+
+void evcollect_event_getdata(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size) {
+  auto ev_ = static_cast<const evcollect::EventData*>(ev);
+  *data = ev_->event_data.data();
+  *size = ev_->event_data.size();
+}
+
 void evcollect_event_setdata(
     evcollect_event_t* ev,
     const char* data,

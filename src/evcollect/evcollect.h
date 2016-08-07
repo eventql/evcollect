@@ -32,6 +32,7 @@ namespace evcollect {
 struct PropertyList {
   std::vector<std::pair<std::string, std::vector<std::string>>> properties;
   bool get(const std::string& key, std::string* out) const;
+  bool get(const std::string& key, const char** out) const;
   size_t get(
       const std::string& key,
       std::vector<std::vector<std::string>>* out) const;
