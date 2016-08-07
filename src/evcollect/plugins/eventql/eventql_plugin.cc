@@ -33,6 +33,7 @@ class EventQLTarget {
 public:
 
   EventQLTarget();
+  ~EventQLTarget();
 
   ReturnCode emitEvent(const EventData& event);
 
@@ -60,9 +61,6 @@ protected:
 
   ReturnCode enqueueEvent(const EnqueuedEvent& event);
   bool awaitEvent(EnqueuedEvent* event);
-
-
-  void runUploadThread();
   ReturnCode uploadEvent(const EnqueuedEvent& event);
 
   std::deque<EnqueuedEvent> queue_;
@@ -78,6 +76,8 @@ protected:
 EventQLTarget::EventQLTarget() :
     queue_max_length_(1024),
     thread_running_(false) {}
+
+EventQLTarget::~EventQLTarget() {}
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
   for (const auto& route : routes_) {
@@ -134,10 +134,35 @@ ReturnCode EventQLTarget::startUploadThread() {
     return ReturnCode::error("RTERROR", "upload thread is already running");
   }
 
+  auto upload_thread = [this] () {
+    while (true) {
+      {
+        std::unique_lock<std::mutex> lk(mutex_);
+        if (thread_shutdown_) {
+          return;
+        }
+      }
+
+      EnqueuedEvent ev;
+      if (!awaitEvent(&ev)) {
+        continue;
+      }
+
+      auto rc = uploadEvent(ev);
+      if (!rc.isSuccess()) {
+        logError(
+            "error while uploading event to $0/$1: $2", 
+            ev.database,
+            ev.table,
+            rc.getMessage());
+      }
+    }
+  };
+
   std::unique_lock<std::mutex> lk(mutex_);
   thread_running_ = true;
   thread_shutdown_ = false;
-  thread_ = std::thread(std::bind(&EventQLTarget::runUploadThread, this));
+  thread_ = std::thread(upload_thread);
   return ReturnCode::success();
 }
 
@@ -150,31 +175,6 @@ void EventQLTarget::stopUploadThread() {
   cv_.notify_all();
   thread_.join();
   thread_running_ = false;
-}
-
-void EventQLTarget::runUploadThread() {
-  while (true) {
-    {
-      std::unique_lock<std::mutex> lk(mutex_);
-      if (thread_shutdown_) {
-        return;
-      }
-    }
-
-    EnqueuedEvent ev;
-    if (!awaitEvent(&ev)) {
-      continue;
-    }
-
-    auto rc = uploadEvent(ev);
-    if (!rc.isSuccess()) {
-      logError(
-          "error while uploading event to $0/$1: $2", 
-          ev.database,
-          ev.table,
-          rc.getMessage());
-    }
-  }
 }
 
 ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
