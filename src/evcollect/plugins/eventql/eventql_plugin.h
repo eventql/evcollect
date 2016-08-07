@@ -21,40 +21,29 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#pragma once
+#include <string>
 #include <evcollect/evcollect.h>
+#include <evcollect/plugin.h>
 
 namespace evcollect {
+namespace plugin_eventql {
 
-bool PropertyList::get(const std::string& key, std::string* out) const {
-  for (const auto& p : properties) {
-    if (p.first != key) {
-      continue;
-    }
+class EventQLPlugin : public OutputPlugin {
+public:
 
-    if (p.second.empty()) {
-      continue;
-    }
+  ReturnCode pluginAttach(
+      const PropertyList& config,
+      void** userdata) override;
 
-    *out = p.second.front();
-    return true;
-  }
+  void pluginDetach(void* userdata) override;
 
-  return false;
-}
+  ReturnCode pluginEmitEvent(
+      void* userdata,
+      const EventData& evdata) override;
 
-size_t PropertyList::get(
-    const std::string& key,
-    std::vector<std::vector<std::string>>* out) const {
-  size_t cnt = 0;
+};
 
-  for (const auto& p : properties) {
-    if (p.first == key) {
-      out->push_back(p.second);
-      ++cnt;
-    }
-  }
-
-  return cnt;
-}
-
+} // namespace plugins_eventql
 } // namespace evcollect
+

@@ -1,6 +1,5 @@
 - [ ] bind/listen monitor socket
 - [ ] monitor connection impl
-- [ ] write pidfile
 - [ ] evcollectctl
 - [ ] mergeEvents impl
 - [ ] statsd plugin

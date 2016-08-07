@@ -24,9 +24,14 @@
 #pragma once
 #include <string>
 #include <evcollect/evcollect.h>
+#include <evcollect/config.h>
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
+
+struct PluginConfig {
+  std::string spool_dir;
+};
 
 class SourcePlugin {
 public:
@@ -36,7 +41,7 @@ public:
   /**
    * Called when the daemon is started
    */
-  virtual ReturnCode pluginInit();
+  virtual ReturnCode pluginInit(const PluginConfig& cfg);
 
   /**
    * Called when the daemon is stopped
@@ -79,7 +84,7 @@ public:
   /**
    * Called when the daemon is started
    */
-  virtual ReturnCode pluginInit();
+  virtual ReturnCode pluginInit(const PluginConfig& config);
 
   /**
    * Called when the daemon is stopped

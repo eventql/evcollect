@@ -24,8 +24,11 @@
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin_map.h>
 #include <evcollect/plugin.h>
+#include <evcollect/config.h>
 
 namespace evcollect {
+
+PluginMap::PluginMap(const ProcessConfig* config) : config_(config) {}
 
 PluginMap::~PluginMap() {
   for (auto& plugin : source_plugins_) {
@@ -59,7 +62,10 @@ ReturnCode PluginMap::getSourcePlugin(
 
   auto& plugin_iter = iter->second;
   if (!plugin_iter.plugin_initialized) {
-    auto rc = plugin_iter.plugin->pluginInit();
+    PluginConfig pc;
+    pc.spool_dir = config_->spool_dir;
+
+    auto rc = plugin_iter.plugin->pluginInit(pc);
     if (!rc.isSuccess()) {
       return rc;
     }
@@ -93,7 +99,10 @@ ReturnCode PluginMap::getOutputPlugin(
 
   auto& plugin_iter = iter->second;
   if (!plugin_iter.plugin_initialized) {
-    auto rc = plugin_iter.plugin->pluginInit();
+    PluginConfig pc;
+    pc.spool_dir = config_->spool_dir;
+
+    auto rc = plugin_iter.plugin->pluginInit(pc);
     if (!rc.isSuccess()) {
       return rc;
     }

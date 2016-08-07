@@ -365,7 +365,7 @@ ReturnCode LogfileSource::writeCheckpoint() {
 ReturnCode LogfileSourcePlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
-  auto logfile = new LogfileSource("/tmp/log");
+  std::unique_ptr<LogfileSource> logfile(new LogfileSource("/tmp/log"));
   logfile->readCheckpoint();
 
   std::string regex;
@@ -376,7 +376,7 @@ ReturnCode LogfileSourcePlugin::pluginAttach(
     }
   }
 
-  *userdata = logfile;
+  *userdata = logfile.release();
   return ReturnCode::success();
 }
 
