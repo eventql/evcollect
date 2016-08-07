@@ -41,14 +41,15 @@ config:
         port 9175
         route * mydb/%E         # store all events into db=mydb and table=<event name>
 
-    # normal event containing system load statistics. submitted every 30s
+    # event containing system load statistics. emitted every 30s
     event cluster.system_stats interval 30s
        source plugin linux.systats
 
+    # event containing custom application statistics. emitted every 30s
     event cluster.app_stats 30s
        source shell /usr/local/bin/app_stats.sh
 
-    # http access log. "streaming event" -- events submitted as they are written
+    # submit http access log -- events are emitted as lines are written to the file
     event logs.access_log stream
       source logfile /var/log/nginx/access.log
 
