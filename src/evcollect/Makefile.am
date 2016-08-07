@@ -70,7 +70,6 @@ libevcollectcore_a_SOURCES = \
     util/sha1.h \
     util/sha1.cc \
     util/base64.h \
-    util/base64.cc \
     config.h \
     config.cc \
     plugin.h \
