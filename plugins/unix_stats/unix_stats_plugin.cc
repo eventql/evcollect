@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <sys/statvfs.h>
 #include <evcollect/util/stringutil.h>
-#include "unix_stats_plugin.h"
+#include <evcollect/util/return_code.h>
 
 #ifdef linux
 #include <mntent.h>
