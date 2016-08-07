@@ -99,16 +99,18 @@ bool UnixStatsPlugin::pluginHasPendingEvent(
 
 std::vector<UnixStatsPlugin::MountInfo> UnixStatsPlugin::getMountInfo() {
 std::vector<UnixStatsPlugin::MountInfo> mount_info;
-
 #ifdef linux
+
   auto file = setmentent("/etc/fstab", "r");
-  
   while (auto mntent = getmntent(file)) {
     printf("filesystemt: %s, mounted on: %s", mntent.mnt_fsname, mntent.mnt_dir);
+    UnixStatsPlugin::MountInfo mn_info = {
+      .device = mntent.mnt_fsname,
+      .mount_point = mntent.mnt_dir
+    };
+
+    mount_info.emplace_back(mn_info);
   }
-
-    
-
 
 #elif __APPLE__
 
