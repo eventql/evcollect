@@ -204,7 +204,7 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
     plugin_path = "./" + plugin_path;
   }
 
-  logDebug("Loading plugin: $0", plugin_path);
+  logInfo("Loading plugin: $0", plugin_path);
   void* dl = dlopen(plugin_path.c_str(), RTLD_NOW);
   if (!dl) {
     return ReturnCode::error(
