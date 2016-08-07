@@ -46,26 +46,29 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
   std::string hostname;
   std::string hostname_fqdn;
 
-  //event_json->append("([");
+  event_json->append("([");
 
-  //auto mount_info = getMountInfo();
-  //for (size_t i = 0; i < mount_info.size(); ++i) {
-  //  if (i > 0) {
-  //    event_json->append(",");
-  //  }
+  auto mount_info = getMountInfo();
+  for (size_t i = 0; i < mount_info.size(); ++i) {
+    if (i > 0) {
+      event_json->append(",");
+    }
 
-  //  //event_json->append(
-  //  //    R"({ "test": "$0", "blah": "$1" })",
-  //  //    StringUtil::jsonEscape(mount_info[i].device),
-  //  //    StringUtil::jsonEscape(mount_info[i].mount_point));
-  //}
+    struct statvfs buf;
+    if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
+      printf("statvfs failed /n");
+      continue;
+    }
 
-  //event_json->append("])");
+    event_json->append(StringUtil::format(
+        R"({ "filesystem": "$0", "ifree": $1, "mount_point": "$2" })",
+        StringUtil::jsonEscape(mount_info[i].device),
+        buf.f_bsize * buf.f_bavail / (1024 * 1024),
+        StringUtil::jsonEscape(mount_info[i].mount_point)));
+  }
 
-  *event_json = StringUtil::format(
-      R"({ "test": "$0", "blah": "$1" })",
-      StringUtil::jsonEscape(hostname),
-      StringUtil::jsonEscape(hostname_fqdn));
+  event_json->append("])");
+
   return ReturnCode::success();
 }
 
