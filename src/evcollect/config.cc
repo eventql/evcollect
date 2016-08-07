@@ -79,6 +79,15 @@ ReturnCode loadConfig(
             std::vector<std::string> { "sys.alive", "test/sys.alive.rollup" }));
   }
 
+  {
+    conf->event_bindings.emplace_back();
+    auto& b = conf->event_bindings.back();
+    b.event_name = "sys.unix";
+    b.interval_micros = 1000000;
+    b.sources.emplace_back();
+    auto& s = b.sources.back();
+    s.plugin_name = "unix_stats";
+  }
   return ReturnCode::success();
 }
 

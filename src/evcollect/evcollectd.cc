@@ -200,15 +200,6 @@ int main(int argc, const char** argv) {
     logFatal("error: --spool_dir is required");
     return 1;
   }
-  {
-    conf.event_bindings.emplace_back();
-    auto& b = conf.event_bindings.back();
-    b.event_name = "sys.unix";
-    b.interval_micros = 1000000;
-    b.sources.emplace_back();
-    auto& s = b.sources.back();
-    s.plugin_name = "unix_stats";
-  }
 
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
