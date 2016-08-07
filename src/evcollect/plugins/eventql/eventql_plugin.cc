@@ -350,6 +350,19 @@ ReturnCode EventQLPlugin::pluginAttach(
 
   std::unique_ptr<EventQLTarget> target(new EventQLTarget(hostname, port));
 
+  std::string username;
+  std::string password;
+  config.get("username", &username);
+  config.get("password", &password);
+  if (!username.empty() || !password.empty()) {
+    target->setCredentials(username, password);
+  }
+
+  std::string auth_token;
+  if (config.get("auth_token", &auth_token)) {
+    target->setAuthToken(auth_token);
+  }
+
   std::vector<std::vector<std::string>> route_cfg;
   config.get("route", &route_cfg);
   for (const auto& route : route_cfg) {
