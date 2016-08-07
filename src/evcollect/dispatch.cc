@@ -73,6 +73,7 @@ ReturnCode Dispatch::emitEvent(
   evdata.event_name = binding->event_name;
   evdata.event_data = event_data;
 
+  logDebug("EMIT: $0 => $1", evdata.event_name, evdata.event_data);
   return deliverEvent(evdata);
 }
 
