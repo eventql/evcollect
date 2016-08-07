@@ -75,6 +75,8 @@ libevcollectcore_a_SOURCES = \
     plugin.cc \
     plugin_map.h \
     plugin_map.cc \
+    logfile.h \
+    logfile.cc \
     dispatch.h \
     dispatch.cc \
     evcollect.h \
@@ -86,8 +88,6 @@ evcollectd_SOURCES = \
     plugins/eventql/eventql_plugin.cc \
     plugins/hostname/hostname_plugin.h \
     plugins/hostname/hostname_plugin.cc \
-    plugins/logfile/logfile_plugin.h \
-    plugins/logfile/logfile_plugin.cc \
     evcollectd.cc
 
 evcollectd_LDADD = \
