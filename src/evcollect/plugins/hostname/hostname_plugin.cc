@@ -39,8 +39,8 @@ bool getEvent(
 
   hostname.resize(1024);
   if (gethostname(&hostname[0], hostname.size()) == -1) {
+    evcollect_seterror(ctx, "gethostname() failed");
     return false;
-    //return ReturnCode::error("SYSCALL_FAILED", "gethostname() failed");
   } else {
     hostname.resize(strlen(hostname.data()));
   }
@@ -50,11 +50,12 @@ bool getEvent(
     hostname_fqdn = std::string(h->h_name);
   }
 
-  //*event_json = StringUtil::format(
-  //    R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
-  //    StringUtil::jsonEscape(hostname),
-  //    StringUtil::jsonEscape(hostname_fqdn));
+  auto evdata = StringUtil::format(
+      R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
+      StringUtil::jsonEscape(hostname),
+      StringUtil::jsonEscape(hostname_fqdn));
 
+  evcollect_event_setdata(ev, evdata.data(), evdata.size());
   return true;
 }
 

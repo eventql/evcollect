@@ -244,6 +244,14 @@ void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
   ctx_->error = std::string(error);
 }
 
+void evcollect_event_setdata(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size) {
+  auto ev_ = static_cast<evcollect::EventData*>(ev);
+  ev_->event_data = std::string(data, size);
+}
+
 void evcollect_source_plugin_register(
     evcollect_ctx_t* ctx,
     const char* plugin_name,
