@@ -112,7 +112,7 @@ std::vector<UnixStatsPlugin::MountInfo> mount_info;
   for (size_t i = 0; i < mntsize; ++i) {
     UnixStatsPlugin::MountInfo mn_info = {
       .device = mntbuf[i].f_mntfromname,
-      .mount_point = mntbuf[i].f_mntonname //FIXME add type
+      .mount_point = mntbuf[i].f_mntonname
     };
 
     mount_info.emplace_back(mn_info);
