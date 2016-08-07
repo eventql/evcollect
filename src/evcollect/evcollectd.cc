@@ -225,8 +225,10 @@ int main(int argc, const char** argv) {
       "eventql",
       std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
 
+  PluginContext plugin_ctx;
+  plugin_ctx.plugin_map = plugin_map.get();
   for (const auto& plugin_path : flags.getStrings("plugin")) {
-    auto rc = loadPlugin(plugin_path);
+    auto rc = loadPlugin(&plugin_ctx, plugin_path);
     if (!rc.isSuccess()) {
       logFatal("error: $0", rc.getMessage());
       return 1;

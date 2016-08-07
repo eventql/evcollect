@@ -55,22 +55,54 @@ typedef void evcollect_plugin_binding_t;
 typedef void evcollect_props_t;
 typedef void evcollect_event_t;
 
+typedef bool (*evcollect_plugin_getnextevent_fn)(
+    evcollect_ctx_t* ctx,
+    void** userdata,
+    evcollect_event_t* ev);
+
+typedef bool (*evcollect_plugin_hasnextevent_fn)(
+    evcollect_ctx_t* ctx,
+    void** userdata);
+
+typedef bool (*evcollect_plugin_emitevent_fn)(
+    evcollect_ctx_t* ctx,
+    void** userdata,
+    const evcollect_event_t* ev);
+
+typedef bool (*evcollect_plugin_attach_fn)(
+    evcollect_ctx_t* ctx,
+    const evcollect_plugin_binding_t* cfg,
+    void** userdata);
+
+typedef bool (*evcollect_plugin_detach_fn)(
+    evcollect_ctx_t* ctx,
+    void** userdata);
+
+typedef bool (*evcollect_plugin_init_fn)(
+    evcollect_ctx_t* ctx,
+    const evcollect_plugin_cfg_t* cfg);
+
+typedef void (*evcollect_plugin_free_fn)(
+    evcollect_ctx_t* ctx);
+
 void evcollect_source_plugin_register(
+    evcollect_ctx_t* ctx,
     const char* plugin_name,
-    bool (*get_next_event_fn)(void** userdata, evcollect_event_t* ev),
-    bool (*has_next_event_fn)(void** userdata) = nullptr,
-    bool (*attach_fn)(const evcollect_plugin_binding_t* cfg, void** userdata) = nullptr,
-    bool (*detach_fn)(void** userdata) = nullptr,
-    bool (*init_fn)(const evcollect_plugin_cfg_t* cfg) = nullptr,
-    void (*free_fn)() = nullptr);
+    evcollect_plugin_getnextevent_fn getnextevent_fn,
+    evcollect_plugin_hasnextevent_fn hasnextevent_fn = nullptr,
+    evcollect_plugin_attach_fn attach_fn = nullptr,
+    evcollect_plugin_detach_fn detach_fn = nullptr,
+    evcollect_plugin_init_fn init_fn = nullptr,
+    evcollect_plugin_free_fn free_fn = nullptr);
 
 void evcollect_output_plugin_register(
+    evcollect_ctx_t* ctx,
     const char* plugin_name,
-    bool (*emit_event_fn)(void** userdata, const evcollect_event_t* ev),
-    bool (*attach_fn)(const evcollect_plugin_binding_t* cfg, void** userdata) = nullptr,
-    bool (*detach_fn)(void** userdata) = nullptr,
-    bool (*init_fn)(const evcollect_plugin_cfg_t* cfg) = nullptr,
-    void (*free_fn)() = nullptr);
+    evcollect_plugin_emitevent_fn emitevent_fn,
+    evcollect_plugin_attach_fn attach_fn = nullptr,
+    evcollect_plugin_detach_fn detach_fn = nullptr,
+    evcollect_plugin_init_fn init_fn = nullptr,
+    evcollect_plugin_free_fn free_fn = nullptr);
 
 void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
 
@@ -79,7 +111,9 @@ void evcollect_event_setdata(
     const char* data,
     size_t size);
 
-__attribute__((visibility("default"))) bool evcollect_plugin_init(evcollect_ctx_t* ctx);
+__attribute__((visibility("default"))) bool __evcollect_plugin_init(
+    evcollect_ctx_t* ctx);
+
 
 }
 

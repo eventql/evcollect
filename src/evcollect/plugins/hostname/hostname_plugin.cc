@@ -30,7 +30,10 @@
 namespace evcollect {
 namespace plugin_hostname {
 
-bool getNextEvent(void** userdata, evcollect_event_t* ev) {
+bool getEvent(
+    evcollect_ctx_t* ctx,
+    void** userdata,
+    evcollect_event_t* ev) {
   std::string hostname;
   std::string hostname_fqdn;
 
@@ -58,7 +61,12 @@ bool getNextEvent(void** userdata, evcollect_event_t* ev) {
 } // namespace plugins_hostname
 } // namespace evcollect
 
-bool evcollect_plugin_init(evcollect_ctx_t* ctx) {
+bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+  evcollect_source_plugin_register(
+      ctx,
+      "hostname",
+      &evcollect::plugin_hostname::getEvent);
+
   return true;
 }
 
