@@ -232,11 +232,13 @@ ReturnCode EventQLTarget::startUploadThread() {
 
       auto rc = uploadEvent(ev);
       if (!rc.isSuccess()) {
-        //logError(
-        //    "error while uploading event to $0/$1: $2", 
-        //    ev.database,
-        //    ev.table,
-        //    rc.getMessage());
+        auto msg = StringUtil::format(
+            "error while uploading event to $0/$1: $2", 
+            ev.database,
+            ev.table,
+            rc.getMessage());
+
+        evcollect_log(EVCOLLECT_LOG_ERROR, msg.c_str());
       }
     }
   };

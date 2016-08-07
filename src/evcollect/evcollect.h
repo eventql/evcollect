@@ -58,6 +58,23 @@ typedef void evcollect_event_t;
 
 void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
 
+enum evcollect_loglevel {
+  EVCOLLECT_LOG_FATAL = 10,
+  EVCOLLECT_LOG_EMERGENCY = 9,
+  EVCOLLECT_LOG_ALERT = 8,
+  EVCOLLECT_LOG_CRITICAL = 7,
+  EVCOLLECT_LOG_ERROR = 6,
+  EVCOLLECT_LOG_WARNING = 5,
+  EVCOLLECT_LOG_NOTICE = 4,
+  EVCOLLECT_LOG_INFO = 3,
+  EVCOLLECT_LOG_DEBUG = 2,
+  EVCOLLECT_LOG_TRACE = 1
+};
+
+void evcollect_log(
+    evcollect_loglevel level,
+    const char* msg);
+
 bool evcollect_plugin_getcfg(
     const evcollect_plugin_cfg_t* cfg,
     const char* key,

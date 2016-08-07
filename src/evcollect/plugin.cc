@@ -239,6 +239,43 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
 
 } // namespace evcollect
 
+void evcollect_log(
+    evcollect_loglevel level,
+    const char* msg) {
+  switch (level) {
+    case EVCOLLECT_LOG_FATAL:
+      logFatal(msg);
+      break;
+    case EVCOLLECT_LOG_EMERGENCY:
+      logEmergency(msg);
+      break;
+    case EVCOLLECT_LOG_ALERT:
+      logAlert(msg);
+      break;
+    case EVCOLLECT_LOG_CRITICAL:
+      logCritical(msg);
+      break;
+    case EVCOLLECT_LOG_ERROR:
+      logError(msg);
+      break;
+    case EVCOLLECT_LOG_WARNING:
+      logWarning(msg);
+      break;
+    case EVCOLLECT_LOG_NOTICE:
+      logNotice(msg);
+      break;
+    case EVCOLLECT_LOG_INFO:
+      logInfo(msg);
+      break;
+    case EVCOLLECT_LOG_DEBUG:
+      logDebug(msg);
+      break;
+    case EVCOLLECT_LOG_TRACE:
+      logTrace(msg);
+      break;
+  }
+}
+
 void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
   auto ctx_ = static_cast<evcollect::PluginContext*>(ctx);
   ctx_->error = std::string(error);
