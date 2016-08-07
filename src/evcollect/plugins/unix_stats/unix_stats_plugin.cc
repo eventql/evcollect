@@ -56,14 +56,34 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
 
     struct statvfs buf;
     if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
-      printf("statvfs failed /n");
       continue;
     }
 
+    auto total = (double) (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto available = (double) (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto used = total - available;
+
+    auto ifree = buf.f_favail;
+    auto iused = buf.f_files - ifree;
+
     event_json->append(StringUtil::format(
-        R"({ "filesystem": "$0", "ifree": $1, "mount_point": "$2" })",
+        R"({ 
+          "filesystem": "$0",
+          "total": $1,
+          "used": $2,
+          "available": $3,
+          "capacity": $4,
+          "iused": $5,
+          "ifree": $6,
+          "mount_point": "$7"
+        })",
         StringUtil::jsonEscape(mount_info[i].device),
-        buf.f_bsize * buf.f_bavail / (1024 * 1024),
+        total,
+        used,
+        available,
+        used / total,
+        iused,
+        ifree,
         StringUtil::jsonEscape(mount_info[i].mount_point)));
   }
 
