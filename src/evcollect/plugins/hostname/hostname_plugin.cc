@@ -55,12 +55,10 @@ bool getNextEvent(void** userdata, evcollect_event_t* ev) {
   return true;
 }
 
-
 } // namespace plugins_hostname
 } // namespace evcollect
 
 bool evcollect_plugin_init(evcollect_ctx_t* ctx) {
-  printf("hostname pluigin init: %p\n", ctx);
   return true;
 }
 

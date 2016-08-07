@@ -49,11 +49,11 @@ struct EventData {
 
 extern "C" {
 
-typedef void* evcollect_ctx_t;
-typedef void* evcollect_plugin_cfg_t;
-typedef void* evcollect_plugin_binding_t;
-typedef void* evcollect_props_t;
-typedef void* evcollect_event_t;
+typedef void evcollect_ctx_t;
+typedef void evcollect_plugin_cfg_t;
+typedef void evcollect_plugin_binding_t;
+typedef void evcollect_props_t;
+typedef void evcollect_event_t;
 
 void evcollect_source_plugin_register(
     const char* plugin_name,
@@ -72,7 +72,9 @@ void evcollect_output_plugin_register(
     bool (*init_fn)(const evcollect_plugin_cfg_t* cfg) = nullptr,
     void (*free_fn)() = nullptr);
 
-void evcollect_event_set_data(
+void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
+
+void evcollect_event_setdata(
     evcollect_event_t* ev,
     const char* data,
     size_t size);

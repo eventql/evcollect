@@ -115,5 +115,9 @@ public:
 
 ReturnCode loadPlugin(std::string plugin_path);
 
+struct PluginContext {
+  std::string error;
+};
+
 } // namespace evcollect
 

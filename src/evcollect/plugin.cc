@@ -84,16 +84,24 @@ ReturnCode loadPlugin(std::string plugin_path) {
         dlerror());
   }
 
-  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(nullptr);
+  PluginContext ctx;
+  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(&ctx);
   if (!rc) {
     dlclose(dl);
     return ReturnCode::error(
         "EIO",
-        "error while loading plugin: %s",
-        plugin_path.c_str());
+        "error while loading plugin: %s: %s",
+        plugin_path.c_str(),
+        ctx.error.c_str());
   }
 
   return ReturnCode::success();
 }
 
 } // namespace evcollect
+
+void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
+  auto ctx_ = static_cast<evcollect::PluginContext*>(ctx);
+  ctx_->error = std::string(error);
+}
+
