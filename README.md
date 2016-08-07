@@ -33,11 +33,13 @@ config:
     output kafka1 plugin kafka
         host 127.0.0.1
         port 1234
+        route * %E              # submit all events into topic=<event name>
 
     # submit events to eventql
     output eventql1 plugin evenql
         host 127.0.0.1
         port 9175
+        route * mydb/%E         # store all events into db=mydb and table=<event name>
 
     # normal event containing system load statistics. submitted every 30s
     event cluster.system_stats interval 30s
