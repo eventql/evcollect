@@ -37,6 +37,7 @@
 #include <evcollect/config.h>
 #include <evcollect/plugins/hostname/hostname_plugin.h>
 #include <evcollect/plugins/logfile/logfile_plugin.h>
+#include <evcollect/plugins/unix/unix_plugin.h>
 
 using namespace evcollect;
 
@@ -186,6 +187,15 @@ int main(int argc, const char** argv) {
     s.properties.properties.emplace_back(
         std::make_pair("regex", "(?<fuu>[^\|]*)?(?<bar>.*)"));
   }
+  {
+    conf.event_bindings.emplace_back();
+    auto& b = conf.event_bindings.back();
+    b.event_name = "sys.unix";
+    b.interval_micros = 1000000;
+    b.sources.emplace_back();
+    auto& s = b.sources.back();
+    s.plugin_name = "unix";
+  }
 
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap());
@@ -195,6 +205,9 @@ int main(int argc, const char** argv) {
   plugin_map->registerSourcePlugin(
       "logfile",
       std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
+  plugin_map->registerSourcePlugin(
+      "unix",
+      std::unique_ptr<SourcePlugin>(new plugin_unix::UnixPlugin()));
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();
