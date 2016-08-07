@@ -52,12 +52,15 @@ protected:
     std::string data;
   };
 
+  struct EventRouting {
+    std::string event_name_match;
+    std::string target_database;
+    std::string target_table;
+  };
+
   ReturnCode enqueueEvent(const EnqueuedEvent& event);
   bool awaitEvent(EnqueuedEvent* event);
 
-  ReturnCode getTargetTables(
-      const EventData& eventdata,
-      std::vector<TargetTable>* targets);
 
   void runUploadThread();
   ReturnCode uploadEvent(const EnqueuedEvent& event);
@@ -69,6 +72,7 @@ protected:
   std::thread thread_;
   bool thread_running_;
   bool thread_shutdown_;
+  std::vector<EventRouting> routes_;
 };
 
 EventQLTarget::EventQLTarget() :
@@ -76,18 +80,14 @@ EventQLTarget::EventQLTarget() :
     thread_running_(false) {}
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
-  std::vector<TargetTable> target_tables;
-  {
-    auto rc = getTargetTables(event, &target_tables);
-    if (!rc.isSuccess()) {
-      return rc;
+  for (const auto& route : routes_) {
+    if (route.event_name_match != event.event_name) {
+      continue;
     }
-  }
 
-  for (const auto& target_table : target_tables) {
     EnqueuedEvent e;
-    e.database = target_table.database;
-    e.table = target_table.table;
+    e.database = route.target_database;
+    e.table = route.target_table;
     e.data = event.event_data;
 
     auto rc = enqueueEvent(e);
@@ -95,19 +95,6 @@ ReturnCode EventQLTarget::emitEvent(const EventData& event) {
       return rc;
     }
   }
-
-  return ReturnCode::success();
-}
-
-ReturnCode EventQLTarget::getTargetTables(
-    const EventData& eventdata,
-    std::vector<TargetTable>* targets) {
-
-  // not yet implemented...
-  TargetTable t;
-  t.database = "mydb";
-  t.table = "mytbl";
-  targets->push_back(t);
 
   return ReturnCode::success();
 }
