@@ -28,6 +28,7 @@
 #include <iostream>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/file.h>
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/evcollect.h>
@@ -264,18 +265,41 @@ int main(int argc, const char** argv) {
   }
 
   /* write pidfile */
-  //ScopedPtr<FileLock> pidfile_lock;
-  //if (process_config->hasProperty("server.pidfile")) {
-  //  auto pidfile_path = process_config->getString("server.pidfile").get();
-  //  pidfile_lock = mkScoped(new FileLock(pidfile_path));
-  //  pidfile_lock->lock(false);
+  int pidfile_fd = -1;
+  auto pidfile_path = flags.getString("pidfile");
+  if (rc.isSuccess() && !pidfile_path.empty()) {
+    pidfile_fd = open(
+        pidfile_path.c_str(),
+        O_WRONLY | O_CREAT,
+        0666);
 
-  //  auto pidfile = File::openFile(
-  //      pidfile_path,
-  //      File::O_WRITE | File::O_CREATEOROPEN | File::O_TRUNCATE);
+    if (pidfile_fd < 0) {
+      rc = ReturnCode::error(
+          "IO_ERROR",
+          "writing pidfile failed: %s",
+          std::strerror(errno));
+    }
 
-  //  pidfile.write(StringUtil::toString(getpid()));
-  //}
+    if (rc.isSuccess() && flock(pidfile_fd, LOCK_EX | LOCK_NB) != 0) {
+      close(pidfile_fd);
+      pidfile_fd = -1;
+      rc = ReturnCode::error("IO_ERROR", "locking pidfile failed");
+    }
+
+    if (rc.isSuccess() && ftruncate(pidfile_fd, 0) != 0) {
+      close(pidfile_fd);
+      pidfile_fd = -1;
+      rc = ReturnCode::error("IO_ERROR", "writing pidfile failed");
+    }
+
+    auto pid = StringUtil::toString(getpid());
+    if (rc.isSuccess() &&
+        write(pidfile_fd, pid.data(), pid.size()) != pid.size()) {
+      close(pidfile_fd);
+      pidfile_fd = -1;
+      rc = ReturnCode::error("IO_ERROR", "writing pidfile failed");
+    }
+  }
 
   /* main dispatch loop */
   if (rc.isSuccess()) {
@@ -311,10 +335,11 @@ int main(int argc, const char** argv) {
   delete dispatch;
   plugin_map.reset(nullptr);
 
-  //if (pidfile_lock.get()) {
-  //  pidfile_lock.reset(nullptr);
-  //  FileUtil::rm(process_config->getString("server.pidfile").get());
-  //}
+  if (pidfile_fd > 0) {
+    unlink(pidfile_path.c_str());
+    flock(pidfile_fd, LOCK_UN);
+    close(pidfile_fd);
+  }
 
   return rc.isSuccess() ? 0 : 1;
 }
