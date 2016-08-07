@@ -23,6 +23,7 @@
  */
 #include <dlfcn.h>
 #include <evcollect/plugin.h>
+#include <evcollect/plugin_map.h>
 #include <evcollect/util/logging.h>
 
 namespace evcollect {
@@ -57,7 +58,7 @@ ReturnCode OutputPlugin::pluginAttach(
 
 void OutputPlugin::pluginDetach(void* userdata) {}
 
-ReturnCode loadPlugin(std::string plugin_path) {
+ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
   if (!StringUtil::beginsWith(plugin_path, "/") &&
       !StringUtil::beginsWith(plugin_path, "./") &&
       !StringUtil::beginsWith(plugin_path, "../")) {
@@ -74,7 +75,7 @@ ReturnCode loadPlugin(std::string plugin_path) {
         dlerror());
   }
 
-  auto dl_init = dlsym(dl, "evcollect_plugin_init");
+  auto dl_init = dlsym(dl, "__evcollect_plugin_init");
   if (!dl_init) {
     dlclose(dl);
     return ReturnCode::error(
@@ -84,16 +85,65 @@ ReturnCode loadPlugin(std::string plugin_path) {
         dlerror());
   }
 
-  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(nullptr);
+  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(plugin_ctx);
   if (!rc) {
     dlclose(dl);
     return ReturnCode::error(
         "EIO",
-        "error while loading plugin: %s",
-        plugin_path.c_str());
+        "error while loading plugin: %s: %s",
+        plugin_path.c_str(),
+        plugin_ctx->error.c_str());
   }
 
   return ReturnCode::success();
 }
 
 } // namespace evcollect
+
+void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
+  auto ctx_ = static_cast<evcollect::PluginContext*>(ctx);
+  ctx_->error = std::string(error);
+}
+
+void evcollect_source_plugin_register(
+    evcollect_ctx_t* ctx,
+    const char* plugin_name,
+    evcollect_plugin_getnextevent_fn getnextevent_fn,
+    evcollect_plugin_hasnextevent_fn hasnextevent_fn /* = nullptr */,
+    evcollect_plugin_attach_fn attach_fn /* = nullptr */,
+    evcollect_plugin_detach_fn detach_fn /* = nullptr */,
+    evcollect_plugin_init_fn init_fn /* = nullptr */,
+    evcollect_plugin_free_fn free_fn /* = nullptr */) {
+  auto ctx_ = static_cast<evcollect::PluginContext*>(ctx);
+  ctx_->plugin_map->registerSourcePlugin(
+      plugin_name,
+      std::unique_ptr<evcollect::SourcePlugin>(
+          new evcollect::DynamicSourcePlugin(
+              getnextevent_fn,
+              hasnextevent_fn,
+              attach_fn,
+              detach_fn,
+              init_fn,
+              free_fn)));
+}
+
+void evcollect_output_plugin_register(
+    evcollect_ctx_t* ctx,
+    const char* plugin_name,
+    evcollect_plugin_emitevent_fn emitevent_fn,
+    evcollect_plugin_attach_fn attach_fn /* = nullptr */,
+    evcollect_plugin_detach_fn detach_fn /* = nullptr */,
+    evcollect_plugin_init_fn init_fn /* = nullptr */,
+    evcollect_plugin_free_fn free_fn /* = nullptr */) {
+  auto ctx_ = static_cast<evcollect::PluginContext*>(ctx);
+  ctx_->plugin_map->registerOutputPlugin(
+      plugin_name,
+      std::unique_ptr<evcollect::OutputPlugin>(
+          new evcollect::DynamicOutputPlugin(
+              emitevent_fn,
+              attach_fn,
+              detach_fn,
+              init_fn,
+              free_fn)));
+}
+
