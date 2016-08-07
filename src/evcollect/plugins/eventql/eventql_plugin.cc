@@ -33,7 +33,10 @@ namespace plugin_eventql {
 class EventQLTarget {
 public:
 
-  EventQLTarget();
+  EventQLTarget(
+      const std::string& hostname,
+      uint16_t port);
+
   ~EventQLTarget();
 
   void addRoute(
@@ -67,6 +70,8 @@ protected:
   bool awaitEvent(EnqueuedEvent* event);
   ReturnCode uploadEvent(const EnqueuedEvent& event);
 
+  std::string hostname_;
+  uint16_t port_;
   std::deque<EnqueuedEvent> queue_;
   mutable std::mutex mutex_;
   mutable std::condition_variable cv_;
@@ -77,7 +82,11 @@ protected:
   std::vector<EventRouting> routes_;
 };
 
-EventQLTarget::EventQLTarget() :
+EventQLTarget::EventQLTarget(
+    const std::string& hostname,
+    uint16_t port) :
+    hostname_(hostname),
+    port_(port),
     queue_max_length_(1024),
     thread_running_(false) {}
 
@@ -206,7 +215,24 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
 ReturnCode EventQLPlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
-  std::unique_ptr<EventQLTarget> target(new EventQLTarget());
+  std::string hostname = "localhost";
+  uint16_t port = 9175;
+
+  std::string hostname_opt;
+  if (config.get("port", &hostname_opt)) {
+    hostname = hostname_opt;
+  }
+
+  std::string port_opt;
+  if (config.get("port", &port_opt)) {
+    try {
+      port = std::stoul(port_opt);
+    } catch (...) {
+      return ReturnCode::error("EINVAL", "invalid port");
+    }
+  }
+
+  std::unique_ptr<EventQLTarget> target(new EventQLTarget(hostname, port));
 
   std::vector<std::vector<std::string>> route_cfg;
   config.get("route", &route_cfg);

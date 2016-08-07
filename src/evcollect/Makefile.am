@@ -21,6 +21,7 @@ endif
 
 if HAVE_PTHREAD
 PTHREAD_DEF = -DHAVE_PTHREAD=1
+PTHREAD_LDADD=-lpthread
 else
 PTHREAD_DEF =
 endif
@@ -78,6 +79,6 @@ evcollectd_SOURCES = \
     evcollect.cc \
     evcollectd.cc
 
-evcollectd_LDADD = $(PCRE_LDADD)
+evcollectd_LDADD = $(PCRE_LDADD) $(PTHREAD_LDADD)
 bin_PROGRAMS += evcollectd
 
