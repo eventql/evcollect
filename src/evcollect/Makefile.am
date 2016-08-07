@@ -60,8 +60,8 @@ evcollectd_SOURCES = \
     plugins/hostname/hostname_plugin.cc \
     plugins/logfile/logfile_plugin.h \
     plugins/logfile/logfile_plugin.cc \
-    plugins/unix/unix_plugin.h \
-    plugins/unix/unix_plugin.cc \
+    plugins/unix_stats/unix_stats_plugin.h \
+    plugins/unix_stats/unix_stats_plugin.cc \
     plugin.h \
     plugin.cc \
     plugin_map.h \

@@ -22,26 +22,36 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#pragma once
-#include <string>
-#include <evcollect/evcollect.h>
-#include <evcollect/plugin.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/statvfs.h>
+#include <evcollect/util/stringutil.h>
+#include "unix_stats_plugin.h"
 
 namespace evcollect {
-namespace plugin_unix {
+namespace plugin_unix_stats {
 
-class UnixPlugin : public SourcePlugin {
-public:
+ReturnCode UnixStatsPlugin::pluginGetNextEvent(
+    void* userdata,
+    std::string* event_json) {
+  std::string hostname;
+  std::string hostname_fqdn;
 
-  ReturnCode pluginGetNextEvent(
-      void* userdata,
-      std::string* event_json) override;
 
-  bool pluginHasPendingEvent(
-      void* userdata) override;
 
-};
+  *event_json = StringUtil::format(
+      R"({ "test": "$0", "blah": "$1" })",
+      StringUtil::jsonEscape(hostname),
+      StringUtil::jsonEscape(hostname_fqdn));
 
-} // namespace plugin_unix
+  return ReturnCode::success();
+}
+
+bool UnixStatsPlugin::pluginHasPendingEvent(
+    void* userdata) {
+  return false;
+}
+
+} // namespace plugin_unix_stats
 } // namespace evcollect
 

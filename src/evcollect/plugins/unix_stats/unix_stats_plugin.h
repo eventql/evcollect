@@ -22,44 +22,26 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#include <unistd.h>
-#include <string.h>
-#include <sys/statvfs.h>
-#include <evcollect/util/stringutil.h>
-#include "unix_plugin.h"
+#pragma once
+#include <string>
+#include <evcollect/evcollect.h>
+#include <evcollect/plugin.h>
 
 namespace evcollect {
-namespace plugin_unix {
+namespace plugin_unix_stats {
 
-ReturnCode UnixPlugin::pluginGetNextEvent(
-    void* userdata,
-    std::string* event_json) {
-  std::string hostname;
-  std::string hostname_fqdn;
+class UnixStatsPlugin : public SourcePlugin {
+public:
 
-  hostname.resize(1024);
-  if (gethostname(&hostname[0], hostname.size()) == -1) {
-    return ReturnCode::error("SYSCALL_FAILED", "gethostname() failed");
-  } else {
-    hostname.resize(strlen(hostname.data()));
-  }
+  ReturnCode pluginGetNextEvent(
+      void* userdata,
+      std::string* event_json) override;
 
-  struct hostent* h = gethostbyname(hostname.c_str());
-  hostname_fqdn = std::string(h->h_name);
+  bool pluginHasPendingEvent(
+      void* userdata) override;
 
-  *event_json = StringUtil::format(
-      R"({ "test": "$0", "blah": "$1" })",
-      StringUtil::jsonEscape(hostname),
-      StringUtil::jsonEscape(hostname_fqdn));
+};
 
-  return ReturnCode::success();
-}
-
-bool UnixPlugin::pluginHasPendingEvent(
-    void* userdata) {
-  return false;
-}
-
-} // namespace plugin_unix
+} // namespace plugin_unix_stats
 } // namespace evcollect
 

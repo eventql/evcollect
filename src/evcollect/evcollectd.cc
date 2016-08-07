@@ -37,7 +37,7 @@
 #include <evcollect/config.h>
 #include <evcollect/plugins/hostname/hostname_plugin.h>
 #include <evcollect/plugins/logfile/logfile_plugin.h>
-#include <evcollect/plugins/unix/unix_plugin.h>
+#include <evcollect/plugins/unix_stats/unix_stats_plugin.h>
 
 using namespace evcollect;
 
@@ -194,7 +194,7 @@ int main(int argc, const char** argv) {
     b.interval_micros = 1000000;
     b.sources.emplace_back();
     auto& s = b.sources.back();
-    s.plugin_name = "unix";
+    s.plugin_name = "unix_stats";
   }
 
   /* load plugins */
@@ -206,8 +206,8 @@ int main(int argc, const char** argv) {
       "logfile",
       std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
   plugin_map->registerSourcePlugin(
-      "unix",
-      std::unique_ptr<SourcePlugin>(new plugin_unix::UnixPlugin()));
+      "unix_stats",
+      std::unique_ptr<SourcePlugin>(new plugin_unix_stats::UnixStatsPlugin()));
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();
