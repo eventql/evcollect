@@ -25,10 +25,11 @@
 #include <thread>
 #include <string.h>
 #include <curl/curl.h>
-#include <evcollect/plugins/eventql/eventql_plugin.h>
+#include <evcollect/evcollect.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/util/base64.h>
 #include <evcollect/util/time.h>
+#include <evcollect/util/return_code.h>
 
 namespace evcollect {
 namespace plugin_eventql {
@@ -346,94 +347,116 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
   }
 }
 
-ReturnCode EventQLPlugin::pluginAttach(
-    const PropertyList& config,
+bool pluginAttach(
+    evcollect_ctx_t* ctx,
+    evcollect_plugin_cfg_t* cfg,
     void** userdata) {
-  std::string hostname = "localhost";
-  uint16_t port = 9175;
 
-  std::string hostname_opt;
-  if (config.get("port", &hostname_opt)) {
-    hostname = hostname_opt;
-  }
-
-  std::string port_opt;
-  if (config.get("port", &port_opt)) {
-    try {
-      port = std::stoul(port_opt);
-    } catch (...) {
-      return ReturnCode::error("EINVAL", "invalid port");
-    }
-  }
-
-  std::unique_ptr<EventQLTarget> target(new EventQLTarget(hostname, port));
-
-  std::string username;
-  std::string password;
-  config.get("username", &username);
-  config.get("password", &password);
-  if (!username.empty() || !password.empty()) {
-    target->setCredentials(username, password);
-  }
-
-  std::string auth_token;
-  if (config.get("auth_token", &auth_token)) {
-    target->setAuthToken(auth_token);
-  }
-
-  std::string http_timeout_opt;
-  if (config.get("http_timeout", &http_timeout_opt)) {
-    uint64_t http_timeout;
-    try {
-      http_timeout = std::stoull(http_timeout_opt);
-    } catch (...) {
-      return ReturnCode::error("EINVAL", "invalid value for http_timeout");
-    }
-    target->setHTTPTimeout(http_timeout);
-  }
-
-  std::string queue_maxlen_opt;
-  if (config.get("queue_maxlen", &queue_maxlen_opt)) {
-    uint64_t queue_maxlen;
-    try {
-      queue_maxlen = std::stoull(queue_maxlen_opt);
-    } catch (...) {
-      return ReturnCode::error("EINVAL", "invalid value for queue_maxlen");
-    }
-    target->setMaxQueueLength(queue_maxlen);
-  }
-
-  std::vector<std::vector<std::string>> route_cfg;
-  config.get("route", &route_cfg);
-  for (const auto& route : route_cfg) {
-    if (route.size() != 2) {
-      return ReturnCode::error(
-          "EINVAL",
-          "invalid number of arguments to route. " \
-          "format is: route <event> <target>");
-    }
-
-    target->addRoute(route[0], route[1]);
-  }
-
-  target->startUploadThread();
-  *userdata = target.release();
-  return ReturnCode::success();
 }
 
-void EventQLPlugin::pluginDetach(void* userdata) {
-  auto target = static_cast<EventQLTarget*>(userdata);
-  target->stopUploadThread();
-  delete target;
-}
-
-ReturnCode EventQLPlugin::pluginEmitEvent(
+bool pluginEmitEvent(
+    evcollect_ctx_t* ctx,
     void* userdata,
-    const EventData& evdata) {
-  auto target = static_cast<EventQLTarget*>(userdata);
-  return target->emitEvent(evdata);
+    const evcollect_event_t* event) {
+
 }
+//ReturnCode EventQLPlugin::pluginAttach(
+//    const PropertyList& config,
+//    void** userdata) {
+//  std::string hostname = "localhost";
+//  uint16_t port = 9175;
+//
+//  std::string hostname_opt;
+//  if (config.get("port", &hostname_opt)) {
+//    hostname = hostname_opt;
+//  }
+//
+//  std::string port_opt;
+//  if (config.get("port", &port_opt)) {
+//    try {
+//      port = std::stoul(port_opt);
+//    } catch (...) {
+//      return ReturnCode::error("EINVAL", "invalid port");
+//    }
+//  }
+//
+//  std::unique_ptr<EventQLTarget> target(new EventQLTarget(hostname, port));
+//
+//  std::string username;
+//  std::string password;
+//  config.get("username", &username);
+//  config.get("password", &password);
+//  if (!username.empty() || !password.empty()) {
+//    target->setCredentials(username, password);
+//  }
+//
+//  std::string auth_token;
+//  if (config.get("auth_token", &auth_token)) {
+//    target->setAuthToken(auth_token);
+//  }
+//
+//  std::string http_timeout_opt;
+//  if (config.get("http_timeout", &http_timeout_opt)) {
+//    uint64_t http_timeout;
+//    try {
+//      http_timeout = std::stoull(http_timeout_opt);
+//    } catch (...) {
+//      return ReturnCode::error("EINVAL", "invalid value for http_timeout");
+//    }
+//    target->setHTTPTimeout(http_timeout);
+//  }
+//
+//  std::string queue_maxlen_opt;
+//  if (config.get("queue_maxlen", &queue_maxlen_opt)) {
+//    uint64_t queue_maxlen;
+//    try {
+//      queue_maxlen = std::stoull(queue_maxlen_opt);
+//    } catch (...) {
+//      return ReturnCode::error("EINVAL", "invalid value for queue_maxlen");
+//    }
+//    target->setMaxQueueLength(queue_maxlen);
+//  }
+//
+//  std::vector<std::vector<std::string>> route_cfg;
+//  config.get("route", &route_cfg);
+//  for (const auto& route : route_cfg) {
+//    if (route.size() != 2) {
+//      return ReturnCode::error(
+//          "EINVAL",
+//          "invalid number of arguments to route. " \
+//          "format is: route <event> <target>");
+//    }
+//
+//    target->addRoute(route[0], route[1]);
+//  }
+//
+//  target->startUploadThread();
+//  *userdata = target.release();
+//  return ReturnCode::success();
+//}
+//
+//void EventQLPlugin::pluginDetach(void* userdata) {
+//  auto target = static_cast<EventQLTarget*>(userdata);
+//  target->stopUploadThread();
+//  delete target;
+//}
+//
+//ReturnCode EventQLPlugin::pluginEmitEvent(
+//    void* userdata,
+//    const EventData& evdata) {
+//  auto target = static_cast<EventQLTarget*>(userdata);
+//  return target->emitEvent(evdata);
+//}
 
 } // namespace plugins_eventql
 } // namespace evcollect
+
+bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+  evcollect_output_plugin_register(
+      ctx,
+      "output",
+      &evcollect::plugin_eventql::pluginEmitEvent);
+
+  return true;
+}
 
