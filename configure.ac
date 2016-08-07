@@ -15,7 +15,7 @@ AC_PROG_RANLIB
 AM_PROG_AR
 AM_PROG_AS
 LT_INIT
-]
+
 # Check for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h stdlib.h unistd.h syslog.h])
