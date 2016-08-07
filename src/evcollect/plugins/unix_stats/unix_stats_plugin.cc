@@ -102,7 +102,12 @@ std::vector<UnixStatsPlugin::MountInfo> mount_info;
 
 #ifdef linux
   auto file = setmentent("/etc/fstab", "r");
-  auto mntent = getmntent(file);
+  
+  while (auto mntent = getmntent(file)) {
+    printf("filesystemt: %s, mounted on: %s", mntent.mnt_fsname, mntent.mnt_dir);
+  }
+
+    
 
 
 #elif __APPLE__
