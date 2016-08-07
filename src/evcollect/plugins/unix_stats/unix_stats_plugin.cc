@@ -65,7 +65,9 @@ std::vector<UnixStatsPlugin::MountInfo> UnixStatsPlugin::getMountInfo() {
 std::vector<UnixStatsPlugin::MountInfo> mount_info;
 
 #ifdef linux
-  auto mntent = getmntent("/etc/fstab");
+  auto file = setmentent("/etc/fstab", "r");
+  auto mntent = getmntent(file);
+
 
 #elif __APPLE__
 
