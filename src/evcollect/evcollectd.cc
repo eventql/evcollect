@@ -36,6 +36,7 @@
 #include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
+#include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/plugins/hostname/hostname_plugin.h>
 #include <evcollect/plugins/logfile/logfile_plugin.h>
 
@@ -188,6 +189,12 @@ int main(int argc, const char** argv) {
         std::make_pair("regex", "(?<fuu>[^\|]*)?(?<bar>.*)"));
   }
 
+  {
+    conf.target_bindings.emplace_back();
+    auto& b = conf.target_bindings.back();
+    b.plugin_name = "eventql";
+  }
+
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap());
   plugin_map->registerSourcePlugin(
@@ -196,6 +203,10 @@ int main(int argc, const char** argv) {
   plugin_map->registerSourcePlugin(
       "logfile",
       std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
+
+  plugin_map->registerOutputPlugin(
+      "eventql",
+      std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();

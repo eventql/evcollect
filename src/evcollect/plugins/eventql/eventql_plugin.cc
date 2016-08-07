@@ -21,38 +21,41 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#include <evcollect/plugin.h>
+#include <evcollect/plugins/eventql/eventql_plugin.h>
 
 namespace evcollect {
+namespace plugin_eventql {
 
-ReturnCode SourcePlugin::pluginInit() {
-  return ReturnCode::success();
+class EventQLTarget {
+public:
+  void enqueueEvent(const EventData& event);
+};
+
+void EventQLTarget::enqueueEvent(const EventData& event) {
+  printf("enqueue event..\n");
 }
 
-void SourcePlugin::pluginFree() {}
-
-ReturnCode SourcePlugin::pluginAttach(
+ReturnCode EventQLPlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
-  *userdata = nullptr;
+  std::unique_ptr<EventQLTarget> target(new EventQLTarget());
+  *userdata = target.release();
   return ReturnCode::success();
 }
 
-void SourcePlugin::pluginDetach(void* userdata) {}
+void EventQLPlugin::pluginDetach(void* userdata) {
+  auto target = static_cast<EventQLTarget*>(userdata);
+  delete target;
+}
 
-ReturnCode OutputPlugin::pluginInit() {
+ReturnCode EventQLPlugin::pluginEmitEvent(
+    void* userdata,
+    const EventData& evdata) {
+  auto target = static_cast<EventQLTarget*>(userdata);
+  target->enqueueEvent(evdata);
   return ReturnCode::success();
 }
 
-void OutputPlugin::pluginFree() {}
-
-ReturnCode OutputPlugin::pluginAttach(
-    const PropertyList& config,
-    void** userdata) {
-  *userdata = nullptr;
-  return ReturnCode::success();
-}
-
-void OutputPlugin::pluginDetach(void* userdata) {}
-
+} // namespace plugins_eventql
 } // namespace evcollect
+

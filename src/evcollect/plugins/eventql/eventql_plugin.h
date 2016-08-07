@@ -21,38 +21,29 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#pragma once
+#include <string>
+#include <evcollect/evcollect.h>
 #include <evcollect/plugin.h>
 
 namespace evcollect {
+namespace plugin_eventql {
 
-ReturnCode SourcePlugin::pluginInit() {
-  return ReturnCode::success();
-}
+class EventQLPlugin : public OutputPlugin {
+public:
 
-void SourcePlugin::pluginFree() {}
+  ReturnCode pluginAttach(
+      const PropertyList& config,
+      void** userdata) override;
 
-ReturnCode SourcePlugin::pluginAttach(
-    const PropertyList& config,
-    void** userdata) {
-  *userdata = nullptr;
-  return ReturnCode::success();
-}
+  void pluginDetach(void* userdata) override;
 
-void SourcePlugin::pluginDetach(void* userdata) {}
+  ReturnCode pluginEmitEvent(
+      void* userdata,
+      const EventData& evdata) override;
 
-ReturnCode OutputPlugin::pluginInit() {
-  return ReturnCode::success();
-}
+};
 
-void OutputPlugin::pluginFree() {}
-
-ReturnCode OutputPlugin::pluginAttach(
-    const PropertyList& config,
-    void** userdata) {
-  *userdata = nullptr;
-  return ReturnCode::success();
-}
-
-void OutputPlugin::pluginDetach(void* userdata) {}
-
+} // namespace plugins_eventql
 } // namespace evcollect
+
