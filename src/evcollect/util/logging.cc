@@ -112,6 +112,7 @@ public:
 
 protected:
   std::string program_name_;
+  std::mutex mutex_;
 };
 
 StderrLogOutputStream::StderrLogOutputStream(
@@ -131,6 +132,7 @@ void StderrLogOutputStream::log(
   StringUtil::replaceAll(&lines, "\n", "\n" + prefix);
   lines.append("\n");
 
+  std::unique_lock<std::mutex> lk(mutex_);
   std::cerr << lines;
 }
 

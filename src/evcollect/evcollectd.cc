@@ -345,8 +345,6 @@ int main(int argc, const char** argv) {
   }
 
   /* shutdown */
-  logInfo("Exiting...");
-
   for (auto& binding : event_bindings) {
     for (auto& source : binding->sources) {
       source.plugin->pluginDetach(source.userdata);
@@ -356,6 +354,8 @@ int main(int argc, const char** argv) {
   for (auto& binding : target_bindings) {
     binding->plugin->pluginDetach(binding->userdata);
   }
+
+  logInfo("Exiting...");
 
   delete dispatch;
   plugin_map.reset(nullptr);

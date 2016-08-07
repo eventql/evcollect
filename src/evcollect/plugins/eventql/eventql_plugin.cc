@@ -22,7 +22,9 @@
  * code of your own applications
  */
 #include <deque>
+#include <thread>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
+#include <evcollect/util/logging.h>
 
 namespace evcollect {
 namespace plugin_eventql {
@@ -33,6 +35,9 @@ public:
   EventQLTarget();
 
   ReturnCode emitEvent(const EventData& event);
+
+  ReturnCode startUploadThread();
+  void stopUploadThread();
 
 protected:
 
@@ -48,19 +53,26 @@ protected:
   };
 
   ReturnCode enqueueEvent(const EnqueuedEvent& event);
+  bool awaitEvent(EnqueuedEvent* event);
 
   ReturnCode getTargetTables(
       const EventData& eventdata,
       std::vector<TargetTable>* targets);
 
+  void runUploadThread();
+
   std::deque<EnqueuedEvent> queue_;
   mutable std::mutex mutex_;
   mutable std::condition_variable cv_;
   size_t queue_max_length_;
-  size_t queue_length_;
+  std::thread thread_;
+  bool thread_running_;
+  bool thread_shutdown_;
 };
 
-EventQLTarget::EventQLTarget() : queue_max_length_(10), queue_length_(0) {}
+EventQLTarget::EventQLTarget() :
+    queue_max_length_(10),
+    thread_running_(false) {}
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
   std::vector<TargetTable> target_tables;
@@ -102,27 +114,87 @@ ReturnCode EventQLTarget::getTargetTables(
 ReturnCode EventQLTarget::enqueueEvent(const EnqueuedEvent& event) {
   std::unique_lock<std::mutex> lk(mutex_);
 
-  if (queue_length_ >= queue_max_length_) {
+  if (queue_.size() >= queue_max_length_) {
     return ReturnCode::error("QUEUE_FULL", "EventQL upload queue is full");
   }
 
   queue_.emplace_back(event);
-  ++queue_length_;
   cv_.notify_all();
 
   return ReturnCode::success();
+}
+
+bool EventQLTarget::awaitEvent(EnqueuedEvent* event) {
+  std::unique_lock<std::mutex> lk(mutex_);
+
+  if (queue_.size() == 0) {
+    cv_.wait(lk);
+  }
+
+  if (queue_.size() == 0) {
+    return false;
+  } else {
+    *event = queue_.front();
+    queue_.pop_front();
+    cv_.notify_all();
+    return true;
+  }
+}
+
+ReturnCode EventQLTarget::startUploadThread() {
+  if (thread_running_) {
+    return ReturnCode::error("RTERROR", "upload thread is already running");
+  }
+
+  std::unique_lock<std::mutex> lk(mutex_);
+  thread_running_ = true;
+  thread_shutdown_ = false;
+  thread_ = std::thread(std::bind(&EventQLTarget::runUploadThread, this));
+  return ReturnCode::success();
+}
+
+void EventQLTarget::stopUploadThread() {
+  if (!thread_running_) {
+    return;
+  }
+
+
+  thread_shutdown_ = true;
+  cv_.notify_all();
+  thread_.join();
+  thread_running_ = false;
+}
+
+void EventQLTarget::runUploadThread() {
+  while (true) {
+    {
+      std::unique_lock<std::mutex> lk(mutex_);
+      if (thread_shutdown_) {
+        return;
+      }
+    }
+
+    EnqueuedEvent ev;
+    if (!awaitEvent(&ev)) {
+      continue;
+    }
+
+    logInfo("upload event: $0/$1 => $2", ev.database, ev.table, ev.data);
+  }
 }
 
 ReturnCode EventQLPlugin::pluginAttach(
     const PropertyList& config,
     void** userdata) {
   std::unique_ptr<EventQLTarget> target(new EventQLTarget());
+  target->startUploadThread();
   *userdata = target.release();
   return ReturnCode::success();
 }
 
 void EventQLPlugin::pluginDetach(void* userdata) {
   auto target = static_cast<EventQLTarget*>(userdata);
+  target->stopUploadThread();
   delete target;
 }
 
