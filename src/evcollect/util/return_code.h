@@ -26,6 +26,7 @@
 #include <mutex>
 #include <stdlib.h>
 #include <string>
+#include <stdarg.h>
 
 class ReturnCode {
 public:
