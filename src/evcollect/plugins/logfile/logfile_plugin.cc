@@ -160,6 +160,7 @@ ReturnCode LogfileSource::getNextLine(std::string* line) {
 
   if (!line_buf_.empty()) {
     *line = line_buf_.front();
+    line->resize(line->size() - 1);
     consumed_offset_ += line_buf_.front().size();
     line_buf_.pop_front();
   }
