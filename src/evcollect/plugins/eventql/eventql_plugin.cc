@@ -28,12 +28,16 @@
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/util/base64.h>
+#include <evcollect/util/time.h>
 
 namespace evcollect {
 namespace plugin_eventql {
 
 class EventQLTarget {
 public:
+
+  static const size_t kDefaultHTTPTimeoutMicros = 30 * kMicrosPerSecond;
+  static const size_t kDefaultMaxQueueLength = 8192;
 
   EventQLTarget(
       const std::string& hostname,
@@ -44,6 +48,9 @@ public:
   void addRoute(
       const std::string& event_name_match,
       const std::string& target);
+
+  void setHTTPTimeout(uint64_t usecs);
+  void setMaxQueueLength(size_t queue_len);
 
   void setAuthToken(const std::string& auth_token);
   void setCredentials(
@@ -91,6 +98,7 @@ protected:
   bool thread_shutdown_;
   std::vector<EventRouting> routes_;
   CURL* curl_;
+  uint64_t http_timeout_;
 };
 
 EventQLTarget::EventQLTarget(
@@ -98,9 +106,10 @@ EventQLTarget::EventQLTarget(
     uint16_t port) :
     hostname_(hostname),
     port_(port),
-    queue_max_length_(1024),
+    queue_max_length_(kDefaultMaxQueueLength),
     thread_running_(false),
-    curl_(nullptr) {
+    curl_(nullptr),
+    http_timeout_(kDefaultHTTPTimeoutMicros) {
   curl_ = curl_easy_init();
 }
 
@@ -128,6 +137,14 @@ void EventQLTarget::setCredentials(
     const std::string& password) {
   username_ = username;
   password_ = password;
+}
+
+void EventQLTarget::setHTTPTimeout(uint64_t usecs) {
+  http_timeout_ = usecs;
+}
+
+void EventQLTarget::setMaxQueueLength(size_t queue_len) {
+  queue_max_length_ = queue_len;
 }
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
@@ -361,6 +378,28 @@ ReturnCode EventQLPlugin::pluginAttach(
   std::string auth_token;
   if (config.get("auth_token", &auth_token)) {
     target->setAuthToken(auth_token);
+  }
+
+  std::string http_timeout_opt;
+  if (config.get("http_timeout", &http_timeout_opt)) {
+    uint64_t http_timeout;
+    try {
+      http_timeout = std::stoull(http_timeout_opt);
+    } catch (...) {
+      return ReturnCode::error("EINVAL", "invalid value for http_timeout");
+    }
+    target->setHTTPTimeout(http_timeout);
+  }
+
+  std::string queue_maxlen_opt;
+  if (config.get("queue_maxlen", &queue_maxlen_opt)) {
+    uint64_t queue_maxlen;
+    try {
+      queue_maxlen = std::stoull(queue_maxlen_opt);
+    } catch (...) {
+      return ReturnCode::error("EINVAL", "invalid value for queue_maxlen");
+    }
+    target->setMaxQueueLength(queue_maxlen);
   }
 
   std::vector<std::vector<std::string>> route_cfg;
