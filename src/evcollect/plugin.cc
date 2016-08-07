@@ -60,7 +60,7 @@ DynamicSourcePlugin::DynamicSourcePlugin(
     free_fn_(free_fn) {}
 
 ReturnCode DynamicSourcePlugin::pluginInit(const PluginConfig& cfg) {
-  if (!init_fn_ || init_fn_(ctx_, &cfg)) {
+  if (!init_fn_ || init_fn_(ctx_)) {
     return ReturnCode::success();
   } else {
     return ReturnCode::error(
@@ -149,7 +149,7 @@ DynamicOutputPlugin::DynamicOutputPlugin(
     free_fn_(free_fn) {}
 
 ReturnCode DynamicOutputPlugin::pluginInit(const PluginConfig& cfg) {
-  if (!init_fn_ || init_fn_(ctx_, &cfg)) {
+  if (!init_fn_ || init_fn_(ctx_)) {
     return ReturnCode::success();
   } else {
     return ReturnCode::error(

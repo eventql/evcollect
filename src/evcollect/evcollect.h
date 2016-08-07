@@ -51,9 +51,35 @@ extern "C" {
 
 typedef void evcollect_ctx_t;
 typedef void evcollect_plugin_cfg_t;
-typedef void evcollect_plugin_binding_t;
 typedef void evcollect_props_t;
 typedef void evcollect_event_t;
+
+void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
+
+bool evcollect_plugin_getcfg(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    const char** value);
+
+void evcollect_event_getname(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size);
+
+void evcollect_event_setname(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size);
+
+void evcollect_event_getdata(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size);
+
+void evcollect_event_setdata(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size);
 
 typedef bool (*evcollect_plugin_getnextevent_fn)(
     evcollect_ctx_t* ctx,
@@ -71,16 +97,15 @@ typedef bool (*evcollect_plugin_emitevent_fn)(
 
 typedef bool (*evcollect_plugin_attach_fn)(
     evcollect_ctx_t* ctx,
-    const evcollect_plugin_binding_t* cfg,
-    void* userdata);
+    const evcollect_plugin_cfg_t* cfg,
+    void** userdata);
 
 typedef bool (*evcollect_plugin_detach_fn)(
     evcollect_ctx_t* ctx,
     void* userdata);
 
 typedef bool (*evcollect_plugin_init_fn)(
-    evcollect_ctx_t* ctx,
-    const evcollect_plugin_cfg_t* cfg);
+    evcollect_ctx_t* ctx);
 
 typedef void (*evcollect_plugin_free_fn)(
     evcollect_ctx_t* ctx);
@@ -104,16 +129,8 @@ void evcollect_output_plugin_register(
     evcollect_plugin_init_fn init_fn = nullptr,
     evcollect_plugin_free_fn free_fn = nullptr);
 
-void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
-
-void evcollect_event_setdata(
-    evcollect_event_t* ev,
-    const char* data,
-    size_t size);
-
 __attribute__((visibility("default"))) bool __evcollect_plugin_init(
     evcollect_ctx_t* ctx);
-
 
 }
 
