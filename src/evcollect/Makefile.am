@@ -45,8 +45,13 @@ AM_CXXFLAGS = -DEVCOLLECT_VERSION=\"v@PACKAGE_VERSION@\" $(PTHREAD_CFLAGS) $(PTH
 AM_CFLAGS =  $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOSTBYNAME_R_DEF) -std=c11 -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -Wall -pedantic -g
 AM_LDFLAGS = $(PTHREAD_CFLAGS)
 
-################# BIN: evcollectd ####################
-evcollectd_SOURCES = \
+################# LIB: evcollectcore #################
+
+noinst_LIBRARIES += evcollectcore.a
+
+evcollectcore_a_SOURCES = \
+		util/ansicolor.h \
+		util/ansicolor.cc \
     util/logging.h \
     util/logging.cc \
     util/flagparser.h \
@@ -55,6 +60,8 @@ evcollectd_SOURCES = \
     util/stringutil.h \
     util/stringutil_impl.h \
     util/stringutil.cc \
+    util/testing.h \
+    util/testing.cc \
     util/time.h \
     util/time_impl.h \
     util/time.cc \
@@ -62,13 +69,8 @@ evcollectd_SOURCES = \
     util/sha1.cc \
     util/base64.h \
     util/base64.cc \
-    plugins/eventql/eventql_plugin.h \
-    plugins/eventql/eventql_plugin.cc \
-    plugins/hostname/hostname_plugin.cc \
-    plugins/logfile/logfile_plugin.h \
     config.h \
     config.cc \
-    plugins/logfile/logfile_plugin.cc \
     plugin.h \
     plugin.cc \
     plugin_map.h \
@@ -76,9 +78,43 @@ evcollectd_SOURCES = \
     dispatch.h \
     dispatch.cc \
     evcollect.h \
-    evcollect.cc \
+    evcollect.cc
+
+################# BIN: evcollectd ####################
+evcollectd_SOURCES = \
+    plugins/eventql/eventql_plugin.h \
+    plugins/eventql/eventql_plugin.cc \
+    plugins/hostname/hostname_plugin.h \
+    plugins/hostname/hostname_plugin.cc \
+    plugins/logfile/logfile_plugin.h \
+    plugins/logfile/logfile_plugin.cc \
     evcollectd.cc
 
-evcollectd_LDADD = $(PCRE_LDFLAGS_) $(CURL_LDFLAGS_) $(PTHREAD_LDFLAGS_)
+evcollectd_LDADD = \
+		$(PCRE_LDFLAGS_) \
+		$(CURL_LDFLAGS_) \
+		$(PTHREAD_LDFLAGS_) \
+		evcollectcore.a
+
 bin_PROGRAMS += evcollectd
 
+####### testing_main.a ################################################
+
+noinst_LIBRARIES += testing_main.a
+testing_main_a_SOURCES = util/testing_main.cc
+#testing_main_a_LIBADD = libXzero.a
+
+####### TESTS #################################################################
+
+TESTS += evcollect_test
+check_PROGRAMS += evcollect_test
+
+evcollect_test_LDADD = \
+		$(PCRE_LDFLAGS_) \
+		$(CURL_LDFLAGS_) \
+		$(PTHREAD_LDFLAGS_) \
+		evcollectcore.a \
+		testing_main.a
+
+evcollect_test_SOURCES = \
+		configparser_test.cc
