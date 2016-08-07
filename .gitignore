@@ -1,5 +1,6 @@
 **/.DS_Store
 *.la
+*.lai
 *.a
 *.lo
 *.o
@@ -41,3 +42,4 @@ src/Makefile.in
 .dirstamp
 compile
 test-driver
+libtool

@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+#ifdef __cplusplus
+
 namespace evcollect {
 
 struct PropertyList {
@@ -42,3 +44,38 @@ struct EventData {
 };
 
 } // namespace evcollect
+
+#endif
+
+extern "C" {
+
+typedef void* evcollect_ctx_t;
+typedef void* evcollect_plugin_cfg_t;
+typedef void* evcollect_plugin_binding_t;
+typedef void* evcollect_props_t;
+typedef void* evcollect_event_t;
+
+void evcollect_source_plugin_register(
+    const char* plugin_name,
+    bool (*get_next_event_fn)(void** userdata, evcollect_event_t* ev),
+    bool (*has_next_event_fn)(void** userdata) = nullptr,
+    bool (*attach_fn)(const evcollect_plugin_binding_t* cfg, void** userdata) = nullptr,
+    bool (*detach_fn)(void** userdata) = nullptr,
+    bool (*init_fn)(const evcollect_plugin_cfg_t* cfg) = nullptr,
+    void (*free_fn)() = nullptr);
+
+void evcollect_output_plugin_register(
+    const char* plugin_name,
+    bool (*emit_event_fn)(void** userdata, const evcollect_event_t* ev),
+    bool (*attach_fn)(const evcollect_plugin_binding_t* cfg, void** userdata) = nullptr,
+    bool (*detach_fn)(void** userdata) = nullptr,
+    bool (*init_fn)(const evcollect_plugin_cfg_t* cfg) = nullptr,
+    void (*free_fn)() = nullptr);
+
+void evcollect_event_set_data(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size);
+
+}
+

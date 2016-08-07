@@ -22,6 +22,7 @@
  * code of your own applications
  */
 #include <evcollect/plugin.h>
+#include <evcollect/util/logging.h>
 
 namespace evcollect {
 
@@ -54,5 +55,9 @@ ReturnCode OutputPlugin::pluginAttach(
 }
 
 void OutputPlugin::pluginDetach(void* userdata) {}
+
+ReturnCode loadPlugin(const std::string& plugin_path) {
+  logDebug("Loading plugin: $0", plugin_path);
+}
 
 } // namespace evcollect

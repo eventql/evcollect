@@ -132,6 +132,8 @@ The main daemon process.
 
        -s, --spool_dir <dir>     Where to store temporary files
        -c, --config <file>       Load config from file
+       -p, --plugin <path>       Load a plugin (.so)
+       -P, --plugin_path <dir>   Set the plugin search path
        --daemonize               Daemonize the server
        --pidfile <file>          Write a PID file
        --loglevel <level>        Minimum log level (default: INFO)

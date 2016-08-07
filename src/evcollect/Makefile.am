@@ -64,7 +64,6 @@ evcollectd_SOURCES = \
     util/base64.cc \
     plugins/eventql/eventql_plugin.h \
     plugins/eventql/eventql_plugin.cc \
-    plugins/hostname/hostname_plugin.h \
     plugins/hostname/hostname_plugin.cc \
     plugins/logfile/logfile_plugin.h \
     config.h \
