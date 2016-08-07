@@ -23,6 +23,7 @@
  */
 #include <netdb.h>
 #include <unistd.h>
+#include <string.h>
 #include <evcollect/util/stringutil.h>
 #include "hostname_plugin.h"
 

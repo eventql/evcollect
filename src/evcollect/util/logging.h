@@ -25,6 +25,7 @@
 #include <string>
 #include <sstream>
 #include <stdarg.h>
+#include <atomic>
 #include <evcollect/util/stringutil.h>
 
 enum class LogLevel {

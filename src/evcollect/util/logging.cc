@@ -24,6 +24,7 @@
 #include "logging.h"
 #include "wallclock.h"
 #include <assert.h>
+#include <string.h>
 #include <iostream>
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
