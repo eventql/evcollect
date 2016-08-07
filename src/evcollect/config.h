@@ -47,6 +47,7 @@ struct TargetBindingConfig {
 struct ProcessConfig {
   std::vector<EventBindingConfig> event_bindings;
   std::vector<TargetBindingConfig> target_bindings;
+  std::string spool_dir;
 };
 
 } // namespace evcollect

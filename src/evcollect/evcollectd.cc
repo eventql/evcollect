@@ -70,6 +70,13 @@ int main(int argc, const char** argv) {
       NULL);
 
   flags.defineFlag(
+      "spool_dir",
+      ::FlagParser::T_STRING,
+      false,
+      "s",
+      NULL);
+
+  flags.defineFlag(
       "config",
       ::FlagParser::T_STRING,
       false,
@@ -148,6 +155,7 @@ int main(int argc, const char** argv) {
   if (flags.isSet("help")) {
     std::cerr <<
         "Usage: $ evcollectd [OPTIONS]\n\n"
+        "   -s, --spool_dir <dir>     Where to store temporary files\n"
         "   -c, --config <file>       Load config from file\n"
         "   --daemonize               Daemonize the server\n"
         "   --pidfile <file>          Write a PID file\n"
@@ -165,6 +173,12 @@ int main(int argc, const char** argv) {
 
   /* load config */
   ProcessConfig conf;
+
+  conf.spool_dir = flags.getString("spool_dir");
+  if (conf.spool_dir.empty()) {
+    logFatal("error: --spool_dir is required");
+    return 1;
+  }
 
   // tmp
   {
@@ -196,7 +210,7 @@ int main(int argc, const char** argv) {
   }
 
   /* load plugins */
-  std::unique_ptr<PluginMap> plugin_map(new PluginMap());
+  std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
   plugin_map->registerSourcePlugin(
       "hostname",
       std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));

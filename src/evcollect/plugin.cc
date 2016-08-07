@@ -25,7 +25,7 @@
 
 namespace evcollect {
 
-ReturnCode SourcePlugin::pluginInit() {
+ReturnCode SourcePlugin::pluginInit(const PluginConfig& cfg) {
   return ReturnCode::success();
 }
 
@@ -40,7 +40,7 @@ ReturnCode SourcePlugin::pluginAttach(
 
 void SourcePlugin::pluginDetach(void* userdata) {}
 
-ReturnCode OutputPlugin::pluginInit() {
+ReturnCode OutputPlugin::pluginInit(const PluginConfig& cfg) {
   return ReturnCode::success();
 }
 
