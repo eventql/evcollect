@@ -236,10 +236,9 @@ int main(int argc, const char** argv) {
       break;
     }
 
-    auto ev_binding = new EventBinding();
+    std::unique_ptr<EventBinding> ev_binding(new EventBinding());
     ev_binding->event_name = binding.event_name;
     ev_binding->interval_micros = binding.interval_micros;
-    event_bindings.emplace_back(ev_binding);
 
     for (const auto& source : binding.sources) {
       EventSourceBinding ev_source;
@@ -261,6 +260,10 @@ int main(int argc, const char** argv) {
 
       ev_binding->sources.emplace_back(ev_source);
     }
+
+    if (rc.isSuccess()) {
+      event_bindings.emplace_back(std::move(ev_binding));
+    }
   }
 
   /* initialize target bindings */
@@ -270,8 +273,7 @@ int main(int argc, const char** argv) {
       break;
     }
 
-    auto trgt_binding = new TargetBinding();
-    target_bindings.emplace_back(trgt_binding);
+    std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
 
     rc = plugin_map->getOutputPlugin(
         binding.plugin_name,
@@ -288,6 +290,8 @@ int main(int argc, const char** argv) {
     if (!rc.isSuccess()) {
       break;
     }
+
+    target_bindings.emplace_back(std::move(trgt_binding));
   }
 
   /* daemonize */
