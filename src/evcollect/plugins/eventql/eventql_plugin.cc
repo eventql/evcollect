@@ -43,6 +43,11 @@ public:
       const std::string& event_name_match,
       const std::string& target);
 
+  void setAuthToken(const std::string& auth_token);
+  void setCredentials(
+      const std::string& username,
+      const std::string& password);
+
   ReturnCode emitEvent(const EventData& event);
 
   ReturnCode startUploadThread();
@@ -72,6 +77,9 @@ protected:
 
   std::string hostname_;
   uint16_t port_;
+  std::string username_;
+  std::string password_;
+  std::string auth_token_;
   std::deque<EnqueuedEvent> queue_;
   mutable std::mutex mutex_;
   mutable std::condition_variable cv_;
@@ -107,6 +115,17 @@ void EventQLTarget::addRoute(
   r.event_name_match = event_name_match;
   r.target = target;
   routes_.emplace_back(r);
+}
+
+void EventQLTarget::setAuthToken(const std::string& auth_token) {
+  auth_token_ = auth_token;
+}
+
+void EventQLTarget::setCredentials(
+    const std::string& username,
+    const std::string& password) {
+  username_ = username;
+  password_ = password;
 }
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
@@ -246,12 +265,26 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
     return ReturnCode::error("EIO", "curl_init() failed");
   }
 
+  struct curl_slist* req_headers = NULL;
+  req_headers = curl_slist_append(
+      req_headers,
+      "Content-Type: application/json; charset=utf-8");
+
+  if (!auth_token_.empty()) {
+    auto hdr = StringUtil::format("Authorization: Token $0", auth_token_);
+    req_headers = curl_slist_append(req_headers, hdr.c_str());
+  }
+
+  //if (!username_.empty() || !password.empty()) {
+  //}
+
   std::string res_body;
   curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, body.c_str());
   curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, curl_write_cb);
   curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &res_body);
   CURLcode curl_res = curl_easy_perform(curl_);
+  curl_slist_free_all(req_headers);
   if (curl_res != CURLE_OK) {
     return ReturnCode::error(
         "EIO",
