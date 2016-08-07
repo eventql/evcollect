@@ -22,6 +22,8 @@
  * code of your own applications
  */
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
 #include "sha1.h"
 #include "stringutil.h"
 
