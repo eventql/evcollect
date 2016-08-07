@@ -21,6 +21,7 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#include <deque>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 
 namespace evcollect {
@@ -52,9 +53,14 @@ protected:
       const EventData& eventdata,
       std::vector<TargetTable>* targets);
 
+  std::deque<EnqueuedEvent> queue_;
+  mutable std::mutex mutex_;
+  mutable std::condition_variable cv_;
+  size_t queue_max_length_;
+  size_t queue_length_;
 };
 
-EventQLTarget::EventQLTarget() {}
+EventQLTarget::EventQLTarget() : queue_max_length_(10), queue_length_(0) {}
 
 ReturnCode EventQLTarget::emitEvent(const EventData& event) {
   std::vector<TargetTable> target_tables;
@@ -80,10 +86,6 @@ ReturnCode EventQLTarget::emitEvent(const EventData& event) {
   return ReturnCode::success();
 }
 
-ReturnCode EventQLTarget::enqueueEvent(const EnqueuedEvent& event) {
-  return ReturnCode::success();
-}
-
 ReturnCode EventQLTarget::getTargetTables(
     const EventData& eventdata,
     std::vector<TargetTable>* targets) {
@@ -93,6 +95,20 @@ ReturnCode EventQLTarget::getTargetTables(
   t.database = "mydb";
   t.table = "mytbl";
   targets->push_back(t);
+
+  return ReturnCode::success();
+}
+
+ReturnCode EventQLTarget::enqueueEvent(const EnqueuedEvent& event) {
+  std::unique_lock<std::mutex> lk(mutex_);
+
+  if (queue_length_ >= queue_max_length_) {
+    return ReturnCode::error("QUEUE_FULL", "EventQL upload queue is full");
+  }
+
+  queue_.emplace_back(event);
+  ++queue_length_;
+  cv_.notify_all();
 
   return ReturnCode::success();
 }
@@ -114,8 +130,7 @@ ReturnCode EventQLPlugin::pluginEmitEvent(
     void* userdata,
     const EventData& evdata) {
   auto target = static_cast<EventQLTarget*>(userdata);
-  target->emitEvent(evdata);
-  return ReturnCode::success();
+  return target->emitEvent(evdata);
 }
 
 } // namespace plugins_eventql
