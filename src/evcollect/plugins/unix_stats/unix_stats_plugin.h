@@ -33,12 +33,30 @@ namespace plugin_unix_stats {
 class UnixStatsPlugin : public SourcePlugin {
 public:
 
+  enum fsType {
+    PROC,
+    SWAP,
+    EXT3,
+    EXT4
+  };
+
+  struct MountInfo {
+    std::string device;
+    std::string mount_point;
+    fsType fs_type;
+  };
+
   ReturnCode pluginGetNextEvent(
       void* userdata,
       std::string* event_json) override;
 
   bool pluginHasPendingEvent(
       void* userdata) override;
+
+
+protected:
+
+  std::vector<UnixStatsPlugin::MountInfo> getMountInfo();
 
 };
 

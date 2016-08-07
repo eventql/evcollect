@@ -52,6 +52,18 @@ bool UnixStatsPlugin::pluginHasPendingEvent(
   return false;
 }
 
+std::vector<UnixStatsPlugin::MountInfo> UnixStatsPlugin::getMountInfo() {
+  UnixStatsPlugin::MountInfo mount_info = {
+    .device = "test",
+    .mount_point = "test",
+    .fs_type = UnixStatsPlugin::fsType::EXT3
+  };
+
+  std::vector<UnixStatsPlugin::MountInfo> infos;
+  infos.emplace_back(mount_info);
+  return infos;
+}
+
 } // namespace plugin_unix_stats
 } // namespace evcollect
 
