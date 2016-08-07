@@ -46,8 +46,21 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
   std::string hostname;
   std::string hostname_fqdn;
 
-  auto mount_info = getMountInfo();
+  //event_json->append("([");
 
+  //auto mount_info = getMountInfo();
+  //for (size_t i = 0; i < mount_info.size(); ++i) {
+  //  if (i > 0) {
+  //    event_json->append(",");
+  //  }
+
+  //  //event_json->append(
+  //  //    R"({ "test": "$0", "blah": "$1" })",
+  //  //    StringUtil::jsonEscape(mount_info[i].device),
+  //  //    StringUtil::jsonEscape(mount_info[i].mount_point));
+  //}
+
+  //event_json->append("])");
 
   *event_json = StringUtil::format(
       R"({ "test": "$0", "blah": "$1" })",
