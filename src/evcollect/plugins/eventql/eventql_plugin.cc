@@ -24,6 +24,7 @@
 #include <deque>
 #include <thread>
 #include <condition_variable>
+#include <curl/curl.h>
 #include <evcollect/plugins/eventql/eventql_plugin.h>
 #include <evcollect/util/logging.h>
 
@@ -80,6 +81,7 @@ protected:
   bool thread_running_;
   bool thread_shutdown_;
   std::vector<EventRouting> routes_;
+  CURL* curl_;
 };
 
 EventQLTarget::EventQLTarget(
@@ -88,9 +90,16 @@ EventQLTarget::EventQLTarget(
     hostname_(hostname),
     port_(port),
     queue_max_length_(1024),
-    thread_running_(false) {}
+    thread_running_(false),
+    curl_(nullptr) {
+  curl_ = curl_easy_init();
+}
 
-EventQLTarget::~EventQLTarget() {}
+EventQLTarget::~EventQLTarget() {
+  if (curl_) {
+    curl_easy_cleanup(curl_);
+  }
+}
 
 void EventQLTarget::addRoute(
     const std::string& event_name_match,
@@ -207,9 +216,79 @@ void EventQLTarget::stopUploadThread() {
   thread_running_ = false;
 }
 
+namespace {
+size_t curl_write_cb(void* data, size_t size, size_t nmemb, std::string* s) {
+  size_t pos = s->size();
+  size_t len = pos + size * nmemb;
+  s->resize(len);
+  memcpy((char*) s->data() + pos, data, size * nmemb);
+  return size * nmemb;
+}
+}
+
 ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
-  logInfo("upload event: $0/$1 => $2", ev.database, ev.table, ev.data);
-  return ReturnCode::success();
+  auto url = StringUtil::format(
+      "http://$0:$1/api/v1/tables/insert",
+      hostname_,
+      port_);
+
+  std::string body;
+  body += "[{ ";
+  body += StringUtil::format(
+      "\"database\": \"$0\",",
+      StringUtil::jsonEscape(ev.database));
+  body += StringUtil::format(
+      "\"table\": \"$0\"",
+      StringUtil::jsonEscape(ev.table));
+  body += "\"data\":" + ev.data;
+  body += "}]";
+
+  if (!curl_) {
+    return ReturnCode::error("EIO", "curl_init() failed");
+  }
+
+  std::string res_body;
+  curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, body.c_str());
+  curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, curl_write_cb);
+  curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &res_body);
+  CURLcode curl_res = curl_easy_perform(curl_);
+  if (curl_res != CURLE_OK) {
+    return ReturnCode::error(
+        "EIO",
+        "http request failed: %s",
+        curl_easy_strerror(curl_res));
+  }
+
+  long http_res_code = 0;
+  curl_easy_getinfo(curl_, CURLINFO_RESPONSE_CODE, &http_res_code);
+
+  switch (http_res_code) {
+    case 201:
+      return ReturnCode::success();
+    case 400:
+      return ReturnCode::error(
+          "EINVAL",
+          "http error: %li -- %.*s",
+          http_res_code,
+          res_body.size(),
+          res_body.data());
+    case 403:
+    case 401:
+      return ReturnCode::error(
+          "EACCESS",
+          "auth error: %li -- %.*s",
+          http_res_code,
+          res_body.size(),
+          res_body.data());
+    default:
+      return ReturnCode::error(
+          "EIO",
+          "http error: %li -- %.*s",
+          http_res_code,
+          res_body.size(),
+          res_body.data());
+  }
 }
 
 ReturnCode EventQLPlugin::pluginAttach(
