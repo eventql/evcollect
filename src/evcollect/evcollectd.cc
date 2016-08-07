@@ -364,11 +364,15 @@ int main(int argc, const char** argv) {
   delete dispatch;
   plugin_map.reset(nullptr);
 
+  /* unlock pidfile */
   if (pidfile_fd > 0) {
     unlink(pidfile_path.c_str());
     flock(pidfile_fd, LOCK_UN);
     close(pidfile_fd);
   }
+
+  /* shutdown libraries*/
+  curl_global_cleanup();
 
   return rc.isSuccess() ? 0 : 1;
 }
