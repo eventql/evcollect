@@ -37,9 +37,7 @@
 #include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
-#include <evcollect/plugins/eventql/eventql_plugin.h>
-#include <evcollect/plugins/logfile/logfile_plugin.h>
-#include <evcollect/plugins/unix_stats/unix_stats_plugin.h>
+#include <evcollect/logfile.h>
 
 using namespace evcollect;
 
@@ -218,16 +216,7 @@ int main(int argc, const char** argv) {
 
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
-  plugin_map->registerSourcePlugin(
-      "logfile",
-      std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
-  plugin_map->registerSourcePlugin(
-      "unix_stats",
-      std::unique_ptr<SourcePlugin>(new plugin_unix_stats::UnixStatsPlugin()));
-
-  plugin_map->registerOutputPlugin(
-      "eventql",
-      std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
+  LogfileSourcePlugin::registerPlugin(plugin_map.get());
 
   PluginContext plugin_ctx;
   plugin_ctx.plugin_map = plugin_map.get();
@@ -247,10 +236,9 @@ int main(int argc, const char** argv) {
       break;
     }
 
-    auto ev_binding = new EventBinding();
+    std::unique_ptr<EventBinding> ev_binding(new EventBinding());
     ev_binding->event_name = binding.event_name;
     ev_binding->interval_micros = binding.interval_micros;
-    event_bindings.emplace_back(ev_binding);
 
     for (const auto& source : binding.sources) {
       EventSourceBinding ev_source;
@@ -272,6 +260,10 @@ int main(int argc, const char** argv) {
 
       ev_binding->sources.emplace_back(ev_source);
     }
+
+    if (rc.isSuccess()) {
+      event_bindings.emplace_back(std::move(ev_binding));
+    }
   }
 
   /* initialize target bindings */
@@ -281,8 +273,7 @@ int main(int argc, const char** argv) {
       break;
     }
 
-    auto trgt_binding = new TargetBinding();
-    target_bindings.emplace_back(trgt_binding);
+    std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
 
     rc = plugin_map->getOutputPlugin(
         binding.plugin_name,
@@ -299,6 +290,8 @@ int main(int argc, const char** argv) {
     if (!rc.isSuccess()) {
       break;
     }
+
+    target_bindings.emplace_back(std::move(trgt_binding));
   }
 
   /* daemonize */

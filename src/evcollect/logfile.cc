@@ -33,11 +33,17 @@
 #include <evcollect/util/time.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/util/sha1.h>
-#include "logfile_plugin.h"
+#include <evcollect/logfile.h>
+#include <evcollect/plugin_map.h>
 #include <pcre.h>
 
 namespace evcollect {
-namespace plugin_logfile {
+
+void LogfileSourcePlugin::registerPlugin(PluginMap* plugin_map) {
+  plugin_map->registerSourcePlugin(
+      "logfile",
+      std::unique_ptr<SourcePlugin>(new LogfileSourcePlugin()));
+}
 
 class LogfileSource {
 public:
@@ -422,5 +428,4 @@ bool LogfileSourcePlugin::pluginHasPendingEvent(
   return static_cast<LogfileSource*>(userdata)->hasNextLine();
 }
 
-} // namespace plugins_logfile
 } // namespace evcollect

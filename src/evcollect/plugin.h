@@ -86,6 +86,7 @@ class DynamicSourcePlugin : public SourcePlugin {
 public:
 
   DynamicSourcePlugin(
+      PluginContext* ctx,
       evcollect_plugin_getnextevent_fn getnextevent_fn,
       evcollect_plugin_hasnextevent_fn hasnextevent_fn,
       evcollect_plugin_attach_fn attach_fn,
@@ -101,6 +102,7 @@ public:
   bool pluginHasPendingEvent(void* userdata) override;
 
 protected:
+  PluginContext* ctx_;
   evcollect_plugin_getnextevent_fn getnextevent_fn_;
   evcollect_plugin_hasnextevent_fn hasnextevent_fn_;
   evcollect_plugin_attach_fn attach_fn_;
@@ -150,6 +152,7 @@ class DynamicOutputPlugin : public OutputPlugin {
 public:
 
   DynamicOutputPlugin(
+      PluginContext* ctx,
       evcollect_plugin_emitevent_fn emitevent_fn,
       evcollect_plugin_attach_fn attach_fn,
       evcollect_plugin_detach_fn detach_fn,
@@ -163,6 +166,7 @@ public:
   ReturnCode pluginEmitEvent(void* userdata, const EventData& evdata) override;
 
 protected:
+  PluginContext* ctx_;
   evcollect_plugin_emitevent_fn emitevent_fn_;
   evcollect_plugin_attach_fn attach_fn_;
   evcollect_plugin_detach_fn detach_fn_;

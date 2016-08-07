@@ -4,10 +4,10 @@ AM_CXXFLAGS = -std=c++0x -Wall -Wextra -Wdelete-non-virtual-dtor -g -fvisibility
 AM_CFLAGS = -std=c11 -Wall -pedantic -g
 AM_LDFLAGS = -fvisibility=hidden
 
-lib_LTLIBRARIES = hostname.la
+lib_LTLIBRARIES = plugin_hostname.la
 
-hostname_la_LDFLAGS = -module -avoid-version -shared
-hostname_la_SOURCES = \
+plugin_hostname_la_LDFLAGS = -module -avoid-version -shared
+plugin_hostname_la_SOURCES = \
     hostname_plugin.cc
 
 

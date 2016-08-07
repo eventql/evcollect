@@ -21,37 +21,53 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-#pragma once
-#include <string>
+#include <netdb.h>
+#include <unistd.h>
+#include <string.h>
+#include <evcollect/util/stringutil.h>
 #include <evcollect/evcollect.h>
-#include <evcollect/plugin.h>
 
 namespace evcollect {
-namespace plugin_logfile {
+namespace plugin_hostname {
 
-class LogfileSourcePlugin : public SourcePlugin {
-public:
+bool getEvent(
+    evcollect_ctx_t* ctx,
+    void* userdata,
+    evcollect_event_t* ev) {
+  std::string hostname;
+  std::string hostname_fqdn;
 
-  ReturnCode pluginInit(
-      const PluginConfig& config) override;
+  hostname.resize(1024);
+  if (gethostname(&hostname[0], hostname.size()) == -1) {
+    evcollect_seterror(ctx, "gethostname() failed");
+    return false;
+  } else {
+    hostname.resize(strlen(hostname.data()));
+  }
 
-  ReturnCode pluginAttach(
-      const PropertyList& config,
-      void** userdata) override;
+  struct hostent* h = gethostbyname(hostname.c_str());
+  if (h) {
+    hostname_fqdn = std::string(h->h_name);
+  }
 
-  void pluginDetach(
-      void* userdata) override;
+  auto evdata = StringUtil::format(
+      R"({ "hostname": "$0", "hostname_fqdn": "$1" })",
+      StringUtil::jsonEscape(hostname),
+      StringUtil::jsonEscape(hostname_fqdn));
 
-  ReturnCode pluginGetNextEvent(
-      void* userdata,
-      std::string* event_json) override;
+  evcollect_event_setdata(ev, evdata.data(), evdata.size());
+  return true;
+}
 
-  bool pluginHasPendingEvent(
-      void* userdata) override;
-
-protected:
-  std::string spool_dir_;
-};
-
-} // namespace plugins_logfile
+} // namespace plugins_hostname
 } // namespace evcollect
+
+bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+  evcollect_source_plugin_register(
+      ctx,
+      "hostname",
+      &evcollect::plugin_hostname::getEvent);
+
+  return true;
+}
+

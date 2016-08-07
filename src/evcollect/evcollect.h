@@ -57,26 +57,26 @@ typedef void evcollect_event_t;
 
 typedef bool (*evcollect_plugin_getnextevent_fn)(
     evcollect_ctx_t* ctx,
-    void** userdata,
+    void* userdata,
     evcollect_event_t* ev);
 
 typedef bool (*evcollect_plugin_hasnextevent_fn)(
     evcollect_ctx_t* ctx,
-    void** userdata);
+    void* userdata);
 
 typedef bool (*evcollect_plugin_emitevent_fn)(
     evcollect_ctx_t* ctx,
-    void** userdata,
+    void* userdata,
     const evcollect_event_t* ev);
 
 typedef bool (*evcollect_plugin_attach_fn)(
     evcollect_ctx_t* ctx,
     const evcollect_plugin_binding_t* cfg,
-    void** userdata);
+    void* userdata);
 
 typedef bool (*evcollect_plugin_detach_fn)(
     evcollect_ctx_t* ctx,
-    void** userdata);
+    void* userdata);
 
 typedef bool (*evcollect_plugin_init_fn)(
     evcollect_ctx_t* ctx,
