@@ -27,10 +27,10 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <evcollect/evcollect.h>
-#include <evcollect/util/logging.h>
 #include <evcollect/util/base64.h>
 #include <evcollect/util/time.h>
 #include <evcollect/util/return_code.h>
+#include <evcollect/util/stringutil.h>
 
 namespace evcollect {
 namespace plugin_eventql {
@@ -232,11 +232,11 @@ ReturnCode EventQLTarget::startUploadThread() {
 
       auto rc = uploadEvent(ev);
       if (!rc.isSuccess()) {
-        logError(
-            "error while uploading event to $0/$1: $2", 
-            ev.database,
-            ev.table,
-            rc.getMessage());
+        //logError(
+        //    "error while uploading event to $0/$1: $2", 
+        //    ev.database,
+        //    ev.table,
+        //    rc.getMessage());
       }
     }
   };
@@ -399,7 +399,7 @@ bool pluginAttach(
   }
 
   const char* http_timeout_opt;
-  if (evcollect_plugin_getcfg(cfg, "http_timeput", &http_timeout_opt)) {
+  if (evcollect_plugin_getcfg(cfg, "http_timeout", &http_timeout_opt)) {
     uint64_t http_timeout;
     try {
       http_timeout = std::stoull(http_timeout_opt);
@@ -412,7 +412,7 @@ bool pluginAttach(
   }
 
   const char* queue_maxlen_opt;
-  if (evcollect_plugin_getcfg(cfg, "http_timeput", &queue_maxlen_opt)) {
+  if (evcollect_plugin_getcfg(cfg, "queue_maxlen", &queue_maxlen_opt)) {
     uint64_t queue_maxlen;
     try {
       queue_maxlen = std::stoull(queue_maxlen_opt);
@@ -424,21 +424,31 @@ bool pluginAttach(
     target->setMaxQueueLength(queue_maxlen);
   }
 
+  for (int i = 0; ; ++i) {
+    std::vector<std::string> route;
+    for (int j = 0; ; ++j) {
+      const char* arg;
+      if (evcollect_plugin_getcfgv(cfg, "route", i, j, &arg)) {
+        route.emplace_back(arg);
+      } else {
+        break;
+      }
+    }
 
-//
-//  std::vector<std::vector<std::string>> route_cfg;
-//  config.get("route", &route_cfg);
-//  for (const auto& route : route_cfg) {
-//    if (route.size() != 2) {
-//      return ReturnCode::error(
-//          "EINVAL",
-//          "invalid number of arguments to route. " \
-//          "format is: route <event> <target>");
-//    }
-//
-//    target->addRoute(route[0], route[1]);
-//  }
-//
+    if (route.empty()) {
+      break;
+    }
+
+    if (route.size() != 2) {
+      evcollect_seterror(
+          ctx,
+          "invalid number of arguments to route. " \
+          "format is: route <event> <target>");
+      return false;
+    }
+
+    target->addRoute(route[0], route[1]);
+  }
 
   target->startUploadThread();
   *userdata = target.release();
@@ -484,7 +494,7 @@ bool pluginEmitEvent(
 bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
   evcollect_output_plugin_register(
       ctx,
-      "output",
+      "eventql",
       &evcollect::plugin_eventql::pluginEmitEvent,
       &evcollect::plugin_eventql::pluginAttach,
       &evcollect::plugin_eventql::pluginDetach);

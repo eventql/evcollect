@@ -59,6 +59,32 @@ bool PropertyList::get(const std::string& key, const char** out) const {
   return false;
 }
 
+bool PropertyList::getv(
+    const std::string& key,
+    size_t i,
+    size_t j,
+    const char** out) const {
+  for (const auto& p : properties) {
+    if (p.first != key) {
+      continue;
+    }
+
+    if (i > 0) {
+      --i;
+      continue;
+    }
+
+    if (j + 1 > p.second.size()) {
+      return false;
+    } else {
+      *out = p.second[j].c_str();
+      return true;
+    }
+  }
+
+  return false;
+}
+
 size_t PropertyList::get(
     const std::string& key,
     std::vector<std::vector<std::string>>* out) const {

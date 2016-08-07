@@ -252,6 +252,16 @@ bool evcollect_plugin_getcfg(
   return cfg_->get(key, value);
 }
 
+bool evcollect_plugin_getcfgv(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    size_t i,
+    size_t j,
+    const char** value) {
+  auto cfg_ = static_cast<const evcollect::PropertyList*>(cfg);
+  return cfg_->getv(key, i, j, value);
+}
+
 void evcollect_event_getname(
     const evcollect_event_t* ev,
     const char** data,

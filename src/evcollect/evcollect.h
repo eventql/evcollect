@@ -33,6 +33,7 @@ struct PropertyList {
   std::vector<std::pair<std::string, std::vector<std::string>>> properties;
   bool get(const std::string& key, std::string* out) const;
   bool get(const std::string& key, const char** out) const;
+  bool getv(const std::string& key, size_t i, size_t j, const char** out) const;
   size_t get(
       const std::string& key,
       std::vector<std::vector<std::string>>* out) const;
@@ -60,6 +61,13 @@ void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
 bool evcollect_plugin_getcfg(
     const evcollect_plugin_cfg_t* cfg,
     const char* key,
+    const char** value);
+
+bool evcollect_plugin_getcfgv(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    size_t i,
+    size_t j,
     const char** value);
 
 void evcollect_event_getname(
