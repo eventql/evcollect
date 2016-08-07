@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2016 DeepCortex GmbH <legal@eventql.io>
  * Authors:
+ *   - Christian Parpart <christianparpart@googlemail.io>
  *   - Paul Asmuth <paul@eventql.io>
  *
  * This program is free software: you can redistribute it and/or modify it under
@@ -25,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <evcollect/evcollect.h>
+#include <evcollect/util/return_code.h>
 
 namespace evcollect {
 
@@ -49,5 +51,9 @@ struct ProcessConfig {
   std::vector<TargetBindingConfig> target_bindings;
   std::string spool_dir;
 };
+
+ReturnCode loadConfig(
+    const std::string& config_file_path,
+    ProcessConfig* config);
 
 } // namespace evcollect

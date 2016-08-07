@@ -173,57 +173,27 @@ int main(int argc, const char** argv) {
 
   /* load config */
   ProcessConfig conf;
+  {
+    auto config_path = flags.getString("config");
+    if (config_path.empty()) {
+      logFatal("error: --config is required");
+      return 1;
+    }
 
-  conf.spool_dir = flags.getString("spool_dir");
+    auto rc = loadConfig(config_path, &conf);
+    if (!rc.isSuccess()) {
+      logFatal("invalid config: $0", rc.getMessage());
+      return 1;
+    }
+  }
+
+  if (flags.isSet("spool_dir")) {
+    conf.spool_dir = flags.getString("spool_dir");
+  }
+
   if (conf.spool_dir.empty()) {
     logFatal("error: --spool_dir is required");
     return 1;
-  }
-
-  // tmp
-  {
-    conf.event_bindings.emplace_back();
-    auto& b = conf.event_bindings.back();
-    b.event_name = "sys.alive";
-    b.interval_micros = 1000000;
-    b.sources.emplace_back();
-    auto& s = b.sources.back();
-    s.plugin_name = "hostname";
-  }
-  {
-    conf.event_bindings.emplace_back();
-    auto& b = conf.event_bindings.back();
-    b.event_name = "logs.access_log";
-    b.interval_micros = 1000000;
-    b.sources.emplace_back();
-
-    auto& s = b.sources.back();
-    s.plugin_name = "logfile";
-    s.properties.properties.emplace_back(
-        std::make_pair(
-            "regex",
-            std::vector<std::string> { "(?<fuu>[^\\|]*)?(?<bar>.*)" }));
-  }
-
-  {
-    conf.target_bindings.emplace_back();
-    auto& b = conf.target_bindings.back();
-    b.plugin_name = "eventql";
-
-    b.properties.properties.emplace_back(
-        std::make_pair(
-            "route",
-            std::vector<std::string> { "logs.access_log", "test/logs.access_log" }));
-
-    b.properties.properties.emplace_back(
-        std::make_pair(
-            "route",
-            std::vector<std::string> { "sys.alive", "test/sys.alive" }));
-
-    b.properties.properties.emplace_back(
-        std::make_pair(
-            "route",
-            std::vector<std::string> { "sys.alive", "test/sys.alive.rollup" }));
   }
 
   /* load plugins */
