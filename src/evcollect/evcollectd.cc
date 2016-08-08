@@ -219,89 +219,9 @@ int main(int argc, const char** argv) {
     conf.load_plugins.push_back(plugin_path);
   }
 
-  /* load plugins */
-  std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
-  LogfileSourcePlugin::registerPlugin(plugin_map.get());
-
-  PluginContext plugin_ctx;
-  plugin_ctx.plugin_map = plugin_map.get();
-  for (const auto& plugin : conf.load_plugins) {
-    auto rc = plugin_map->loadPlugin(plugin, &plugin_ctx);
-    if (!rc.isSuccess()) {
-      logFatal(
-          "error while loading plugin '$0': $1",
-          plugin,
-          rc.getMessage());
-
-      return 1;
-    }
-  }
-
-  /* initialize event bindings */
-  auto rc = ReturnCode::success();
-  std::vector<std::unique_ptr<EventBinding>> event_bindings;
-  for (const auto& binding : conf.event_bindings) {
-    if (!rc.isSuccess()) {
-      break;
-    }
-
-    std::unique_ptr<EventBinding> ev_binding(new EventBinding());
-    ev_binding->event_name = binding.event_name;
-    ev_binding->interval_micros = binding.interval_micros;
-
-    for (const auto& source : binding.sources) {
-      EventSourceBinding ev_source;
-      rc = plugin_map->getSourcePlugin(
-          source.plugin_name,
-          &ev_source.plugin);
-
-      if (!rc.isSuccess()) {
-        break;
-      }
-
-      rc = ev_source.plugin->pluginAttach(
-          source.properties,
-          &ev_source.userdata);
-
-      if (!rc.isSuccess()) {
-        break;
-      }
-
-      ev_binding->sources.emplace_back(ev_source);
-    }
-
-    if (rc.isSuccess()) {
-      event_bindings.emplace_back(std::move(ev_binding));
-    }
-  }
-
-  /* initialize target bindings */
-  std::vector<std::unique_ptr<TargetBinding>> target_bindings;
-  for (const auto& binding : conf.target_bindings) {
-    if (!rc.isSuccess()) {
-      break;
-    }
-
-    std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
-
-    rc = plugin_map->getOutputPlugin(
-        binding.plugin_name,
-        &trgt_binding->plugin);
-
-    if (!rc.isSuccess()) {
-      break;
-    }
-
-    rc = trgt_binding->plugin->pluginAttach(
-        binding.properties,
-        &trgt_binding->userdata);
-
-    if (!rc.isSuccess()) {
-      break;
-    }
-
-    target_bindings.emplace_back(std::move(trgt_binding));
-  }
+  /* setup service */
+  service = new Service();
+  auto rc = service->configure(&conf);
 
   /* daemonize */
   if (rc.isSuccess() && flags.isSet("daemonize")) {
@@ -347,15 +267,7 @@ int main(int argc, const char** argv) {
 
   /* main service loop */
   if (rc.isSuccess()) {
-    logInfo("Starting with $0 event bindings", event_bindings.size());
-    service = new Service();
-    for (const auto& binding : event_bindings) {
-      service->addEventBinding(binding.get());
-    }
-    for (const auto& binding : target_bindings) {
-      service->addTargetBinding(binding.get());
-    }
-
+    logInfo("Starting...");
     rc = service->run();
   }
 
@@ -364,20 +276,11 @@ int main(int argc, const char** argv) {
   }
 
   /* shutdown */
-  for (auto& binding : event_bindings) {
-    for (auto& source : binding->sources) {
-      source.plugin->pluginDetach(source.userdata);
-    }
-  }
-
-  for (auto& binding : target_bindings) {
-    binding->plugin->pluginDetach(binding->userdata);
-  }
-
   logInfo("Exiting...");
-
+  signal(SIGTERM, SIG_IGN);
+  signal(SIGINT, SIG_IGN);
+  signal(SIGHUP, SIG_IGN);
   delete service;
-  plugin_map.reset(nullptr);
 
   /* unlock pidfile */
   if (pidfile_fd > 0) {

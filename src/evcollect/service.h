@@ -27,28 +27,13 @@
 #include <mutex>
 #include <condition_variable>
 #include <evcollect/evcollect.h>
+#include <evcollect/config.h>
+#include <evcollect/plugin.h>
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
 class SourcePlugin;
 class OutputPlugin;
-
-struct EventSourceBinding {
-  SourcePlugin* plugin;
-  void* userdata;
-};
-
-struct EventBinding {
-  std::string event_name;
-  uint64_t interval_micros;
-  std::vector<EventSourceBinding> sources;
-  uint64_t next_tick;
-};
-
-struct TargetBinding {
-  OutputPlugin* plugin;
-  void* userdata;
-};
 
 class Service {
 public:
@@ -56,15 +41,33 @@ public:
   Service();
   ~Service();
 
-  void addEventBinding(EventBinding* binding);
-  void addTargetBinding(TargetBinding* binding);
+  const std::string& getSpoolDir() const;
+  const std::string& getPluginDir() const;
 
+  ReturnCode configure(const ProcessConfig* conf);
   ReturnCode run();
   void kill();
 
 protected:
 
-  ReturnCode runOnce(EventBinding* binding);
+  struct EventSourceBinding {
+    SourcePlugin* plugin;
+    void* userdata;
+  };
+
+  struct EventBinding {
+    std::string event_name;
+    uint64_t interval_micros;
+    std::vector<EventSourceBinding> sources;
+    uint64_t next_tick;
+  };
+
+  struct TargetBinding {
+    OutputPlugin* plugin;
+    void* userdata;
+  };
+
+  ReturnCode processEvent(EventBinding* binding);
 
   ReturnCode emitEvent(
       EventBinding* binding,
@@ -73,11 +76,14 @@ protected:
 
   ReturnCode deliverEvent(const EventData& evdata);
 
-  std::vector<TargetBinding*> targets_;
+  std::string spool_dir_;
+  std::string plugin_dir_;
+  PluginMap plugin_map_;
+  std::vector<std::unique_ptr<EventBinding>> event_bindings_;
+  std::vector<std::unique_ptr<TargetBinding>> targets_;
   std::multiset<
       EventBinding*,
       std::function<bool (EventBinding*, EventBinding*)>> queue_;
-
   int listen_fd_;
   int wakeup_pipe_[2];
 };

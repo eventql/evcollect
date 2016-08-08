@@ -176,10 +176,12 @@ protected:
   evcollect_plugin_free_fn free_fn_;
 };
 
+class Service;
+
 class PluginMap {
 public:
 
-  PluginMap(const ProcessConfig* config);
+  PluginMap(const Service* service);
   ~PluginMap();
 
   ReturnCode loadPlugin(
@@ -215,7 +217,7 @@ protected:
     bool plugin_initialized;
   };
 
-  const ProcessConfig* config_;
+  const Service* service_;
   mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
   mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
 };

@@ -40,6 +40,7 @@ std::string mergeEvents(const std::string& base, const std::string& overlay) {
 } // namespace
 
 Service::Service() :
+    plugin_map_(this),
     queue_([] (EventBinding* a, EventBinding* b) {
       return a->next_tick < b->next_tick;
     }),
@@ -51,17 +52,104 @@ Service::Service() :
 }
 
 Service::~Service() {
+  for (auto& binding : event_bindings_) {
+    for (auto& source : binding->sources) {
+      source.plugin->pluginDetach(source.userdata);
+    }
+  }
+
+  for (auto& binding : targets_) {
+    binding->plugin->pluginDetach(binding->userdata);
+  }
+
   close(wakeup_pipe_[0]);
   close(wakeup_pipe_[1]);
 }
 
-void Service::addEventBinding(EventBinding* binding) {
-  binding->next_tick = MonotonicClock::now() + binding->interval_micros;
-  queue_.insert(binding);
-}
+ReturnCode Service::configure(const ProcessConfig* conf) {
+  /* set global config */
+  spool_dir_ = conf->spool_dir;
+  plugin_dir_ = conf->plugin_dir;
 
-void Service::addTargetBinding(TargetBinding* binding) {
-  targets_.push_back(binding);
+  /* load plugins */
+  PluginContext plugin_ctx;
+  plugin_ctx.plugin_map = &plugin_map_;
+  for (const auto& plugin : conf->load_plugins) {
+    auto rc = plugin_map_.loadPlugin(plugin, &plugin_ctx);
+    if (!rc.isSuccess()) {
+      return ReturnCode::error(
+          "EPLUGIN",
+          StringUtil::format(
+              "error while loading plugin '$0': $1",
+              plugin,
+              rc.getMessage()));
+    }
+  }
+
+  /* initialize event bindings */
+  for (const auto& binding : conf->event_bindings) {
+    std::unique_ptr<EventBinding> ev_binding(new EventBinding());
+    ev_binding->event_name = binding.event_name;
+    ev_binding->interval_micros = binding.interval_micros;
+
+    for (const auto& source : binding.sources) {
+      EventSourceBinding ev_source;
+      {
+        auto rc = plugin_map_.getSourcePlugin(
+            source.plugin_name,
+            &ev_source.plugin);
+
+        if (!rc.isSuccess()) {
+          return rc;
+        }
+      }
+
+      {
+        auto rc = ev_source.plugin->pluginAttach(
+            source.properties,
+            &ev_source.userdata);
+
+        if (!rc.isSuccess()) {
+          return rc;
+        }
+      }
+
+      ev_binding->sources.emplace_back(ev_source);
+    }
+
+    ev_binding->next_tick = MonotonicClock::now() + ev_binding->interval_micros;
+    queue_.insert(ev_binding.get());
+    event_bindings_.emplace_back(std::move(ev_binding));
+  }
+
+  /* initialize target bindings */
+  for (const auto& binding : conf->target_bindings) {
+    std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
+
+    {
+      auto rc = plugin_map_.getOutputPlugin(
+          binding.plugin_name,
+          &trgt_binding->plugin);
+
+      if (!rc.isSuccess()) {
+        return rc;
+      }
+    }
+
+    {
+      auto rc = trgt_binding->plugin->pluginAttach(
+          binding.properties,
+          &trgt_binding->userdata);
+
+      if (!rc.isSuccess()) {
+        return rc;
+      }
+    }
+
+    targets_.emplace_back(std::move(trgt_binding));
+  }
+
+  return ReturnCode::success();
 }
 
 ReturnCode Service::emitEvent(
@@ -132,7 +220,7 @@ ReturnCode Service::run() {
       continue;
     }
 
-    auto rc = runOnce(job);
+    auto rc = processEvent(job);
     if (!rc.isSuccess()) {
       logError(
           "Error while processing event '$0': $1",
@@ -157,7 +245,7 @@ ReturnCode Service::run() {
   }
 }
 
-ReturnCode Service::runOnce(EventBinding* binding) {
+ReturnCode Service::processEvent(EventBinding* binding) {
   if (binding->sources.empty()) {
     return ReturnCode::success();
   }

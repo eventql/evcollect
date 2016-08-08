@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <evcollect/plugin.h>
+#include <evcollect/service.h>
 #include <evcollect/util/logging.h>
 
 namespace evcollect {
@@ -233,7 +234,7 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
   return ReturnCode::success();
 }
 
-PluginMap::PluginMap(const ProcessConfig* config) : config_(config) {}
+PluginMap::PluginMap(const Service* service) : service_(service) {}
 
 PluginMap::~PluginMap() {
   for (auto& plugin : source_plugins_) {
@@ -251,9 +252,9 @@ ReturnCode PluginMap::loadPlugin(
   std::vector<std::string> path_candidates;
   path_candidates.emplace_back(plugin_name);
   if (plugin_name.find("/") == std::string::npos) {
-    path_candidates.emplace_back(config_->plugin_dir + "/" + plugin_name);
+    path_candidates.emplace_back(service_->getPluginDir() + "/" + plugin_name);
     path_candidates.emplace_back(
-        config_->plugin_dir + "/plugin_" + plugin_name + ".so");
+        service_->getPluginDir() + "/plugin_" + plugin_name + ".so");
   }
 
   for (const auto& path : path_candidates) {
@@ -295,7 +296,7 @@ ReturnCode PluginMap::getSourcePlugin(
   auto& plugin_iter = iter->second;
   if (!plugin_iter.plugin_initialized) {
     PluginConfig pc;
-    pc.spool_dir = config_->spool_dir;
+    pc.spool_dir = service_->getSpoolDir();
 
     auto rc = plugin_iter.plugin->pluginInit(pc);
     if (!rc.isSuccess()) {
@@ -332,7 +333,7 @@ ReturnCode PluginMap::getOutputPlugin(
   auto& plugin_iter = iter->second;
   if (!plugin_iter.plugin_initialized) {
     PluginConfig pc;
-    pc.spool_dir = config_->spool_dir;
+    pc.spool_dir = service_->getSpoolDir();
 
     auto rc = plugin_iter.plugin->pluginInit(pc);
     if (!rc.isSuccess()) {
