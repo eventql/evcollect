@@ -37,6 +37,8 @@
 #include <sys/param.h>
 #include <sys/ucred.h>
 #include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #endif
 
 namespace evcollect {
@@ -133,13 +135,36 @@ bool getEvent(
     evdata.append("]}");
   }
 
+  evdata.append(R"(,{"loadavg": )");
+
 
 #if __linux__
-  std::ifstream f("/proc/loadavg", std::ifstream::in);
-  while (f.good()) {
-    auto c = f.get();
+  //std::ifstream f("/proc/loadavg", std::ifstream::in);
+  //while (f.good()) {
+  //  auto c = f.get();
+  //}
+#elif __APPLE__
+  struct loadavg loadinfo;
+  size_t size = sizeof(loadinfo);
+
+  if (sysctlbyname("vm.loadavg", &loadinfo, &size, NULL, 0) == -1) {
+    //logerror strerror(errno));
+    return false;
+  }
+
+  for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
+    if (i > 0) {
+      evdata.append(",");
+    }
+
+    evdata.append(StringUtil::format(
+        "{$0: $1}",
+        i,
+        (double) loadinfo.ldavg[i] / loadinfo.fscale));
   }
 #endif
+
+  evdata.append("}");
 
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
   return true;
