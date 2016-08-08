@@ -30,13 +30,10 @@
 #include <sys/resource.h>
 #include <sys/file.h>
 #include <curl/curl.h>
+#include <evcollect/evcollect.h>
+#include <evcollect/service.h>
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
-#include <evcollect/evcollect.h>
-#include <evcollect/plugin.h>
-#include <evcollect/service.h>
-#include <evcollect/config.h>
-#include <evcollect/logfile.h>
 
 using namespace evcollect;
 
