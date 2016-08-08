@@ -40,8 +40,8 @@ public:
 
   virtual ~Service() = default;
 
-  virtual ReturnCode addEvent(const EventBindingConfig* event_binding) = 0;
-  virtual ReturnCode addTarget(const TargetBindingConfig* target_cfg) = 0;
+  virtual ReturnCode addEvent(const EventConfig* event_binding) = 0;
+  virtual ReturnCode addTarget(const TargetConfig* target_cfg) = 0;
 
   virtual ReturnCode loadPlugin(const std::string& plugin) = 0;
   virtual ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) = 0;

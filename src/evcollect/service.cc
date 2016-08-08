@@ -65,8 +65,8 @@ public:
 
   ~ServiceImpl() override;
 
-  ReturnCode addEvent(const EventBindingConfig* event_binding) override;
-  ReturnCode addTarget(const TargetBindingConfig* target_cfg) override;
+  ReturnCode addEvent(const EventConfig* event_binding) override;
+  ReturnCode addTarget(const TargetConfig* target_cfg) override;
 
   ReturnCode loadPlugin(const std::string& plugin) override;
   ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) override;
@@ -130,7 +130,7 @@ ServiceImpl::~ServiceImpl() {
   close(wakeup_pipe_[1]);
 }
 
-ReturnCode ServiceImpl::addEvent(const EventBindingConfig* binding) {
+ReturnCode ServiceImpl::addEvent(const EventConfig* binding) {
   std::unique_ptr<EventBinding> ev_binding(new EventBinding());
   ev_binding->event_name = binding->event_name;
   ev_binding->interval_micros = binding->interval_micros;
@@ -166,7 +166,7 @@ ReturnCode ServiceImpl::addEvent(const EventBindingConfig* binding) {
   return ReturnCode::success();
 }
 
-ReturnCode ServiceImpl::addTarget(const TargetBindingConfig* binding) {
+ReturnCode ServiceImpl::addTarget(const TargetConfig* binding) {
   std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
 
   {

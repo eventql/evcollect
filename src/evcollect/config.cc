@@ -490,7 +490,7 @@ ReturnCode ConfigParser::goal() {
   for (;;) {
     switch (currentToken()) {
       case ConfigToken::Event: {
-        EventBindingConfig event;
+        EventConfig event;
         ReturnCode rc = eventDecl(&event);
         if (rc.isError()) {
           return rc;
@@ -498,7 +498,7 @@ ReturnCode ConfigParser::goal() {
         config_->event_bindings.emplace_back(std::move(event));
       }
       case ConfigToken::Output: {
-        TargetBindingConfig output;
+        TargetConfig output;
         ReturnCode rc = outputDecl(&output);
         if (rc.isError()) {
           return rc;
@@ -580,7 +580,7 @@ ReturnCode ConfigParser::pluginDecl() {
 
 // EventDecl       ::= "event" NAME PropertyList NL EventSourceDecl*
 // EventSourceDecl ::= "source" NAME VALUE PropertyList NL
-ReturnCode ConfigParser::eventDecl(EventBindingConfig* event) {
+ReturnCode ConfigParser::eventDecl(EventConfig* event) {
   nextToken(); // skip "event"
 
   ReturnCode rc = consumeName(&event->event_name);
@@ -603,7 +603,7 @@ ReturnCode ConfigParser::eventDecl(EventBindingConfig* event) {
   while (currentToken() == ConfigToken::Source) {
     nextToken();
 
-    EventSourceBindingConfig source;
+    EventSourceConfig source;
     rc = consumeName(&source.plugin_name);
     if (rc.isError())
       return rc;
@@ -623,7 +623,7 @@ ReturnCode ConfigParser::eventDecl(EventBindingConfig* event) {
 }
 
 ReturnCode ConfigParser::applyEventProperties(const PropertyList& props,
-                                              EventBindingConfig* output) {
+                                              EventConfig* output) {
 
   for (const auto& prop: props.properties) {
     if (prop.first == "interval") {
@@ -637,7 +637,7 @@ ReturnCode ConfigParser::applyEventProperties(const PropertyList& props,
 }
 
 // OutputDecl      ::= "output" NAME "plugin" PATH NL OutputProperty*
-ReturnCode ConfigParser::outputDecl(TargetBindingConfig* output) {
+ReturnCode ConfigParser::outputDecl(TargetConfig* output) {
   nextToken(); // skip "output"
 
   ReturnCode rc = consumeName(&output->plugin_value);
