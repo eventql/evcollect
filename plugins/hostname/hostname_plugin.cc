@@ -24,7 +24,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
-#include <evcollect/util/stringutil.h>
+#include <util/stringutil.h>
 #include <evcollect/evcollect.h>
 
 namespace evcollect {
