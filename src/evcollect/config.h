@@ -30,8 +30,19 @@
 
 namespace evcollect {
 
+struct PropertyList {
+  std::vector<std::pair<std::string, std::vector<std::string>>> properties;
+  bool get(const std::string& key, std::string* out) const;
+  bool get(const std::string& key, const char** out) const;
+  bool getv(const std::string& key, size_t i, size_t j, const char** out) const;
+  size_t get(
+      const std::string& key,
+      std::vector<std::vector<std::string>>* out) const;
+};
+
 struct EventSourceBindingConfig {
   std::string plugin_name;
+  std::string plugin_value;
   PropertyList properties;
 };
 
@@ -43,6 +54,7 @@ struct EventBindingConfig {
 
 struct TargetBindingConfig {
   std::string plugin_name;
+  std::string plugin_value;
   PropertyList properties;
 };
 
@@ -50,6 +62,8 @@ struct ProcessConfig {
   std::vector<EventBindingConfig> event_bindings;
   std::vector<TargetBindingConfig> target_bindings;
   std::string spool_dir;
+  std::string plugin_dir;
+  std::vector<std::string> load_plugins;
 };
 
 ReturnCode loadConfig(

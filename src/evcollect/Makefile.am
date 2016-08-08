@@ -26,6 +26,8 @@ else
 PTHREAD_DEF =
 endif
 
+DL_LDFLAGS_ = -ldl
+
 if HAVE_SYSLOG_H
 SYSLOG_DEF = -DHAVE_SYSLOG_H=1
 else
@@ -44,6 +46,7 @@ CURL_LDFLAGS_=-lcurl
 AM_CXXFLAGS = -DEVCOLLECT_VERSION=\"v@PACKAGE_VERSION@\" $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOSTBYNAME_R_DEF) -std=c++0x -ftemplate-depth=500 -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wdelete-non-virtual-dtor -Wno-predefined-identifier-outside-function -Wno-invalid-offsetof -g -I$(top_srcdir)/src -I$(top_builddir)/src
 AM_CFLAGS =  $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOSTBYNAME_R_DEF) -std=c11 -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -Wall -pedantic -g
 AM_LDFLAGS = $(PTHREAD_CFLAGS)
+AM_LDADD = $(PCRE_LDFLAGS_) $(CURL_LDFLAGS_) $(PTHREAD_LDFLAGS_) $(DL_LDFLAGS_)
 
 ################# LIB: libevcollectcore #################
 
@@ -68,9 +71,12 @@ libevcollectcore_a_SOURCES = \
     util/sha1.h \
     util/sha1.cc \
     util/base64.h \
-    util/base64.cc \
     config.h \
     config.cc \
+    configlexer.h \
+    configlexer.cc \
+    configparser.h \
+    configparser.cc \
     plugin.h \
     plugin.cc \
     plugin_map.h \
@@ -79,17 +85,14 @@ libevcollectcore_a_SOURCES = \
     logfile.cc \
     dispatch.h \
     dispatch.cc \
-    evcollect.h \
-    evcollect.cc
+    evcollect.h
 
 ################# BIN: evcollectd ####################
 evcollectd_SOURCES = evcollectd.cc
 
 evcollectd_LDADD = \
-		$(PCRE_LDFLAGS_) \
-		$(CURL_LDFLAGS_) \
-		$(PTHREAD_LDFLAGS_) \
-		libevcollectcore.a
+		libevcollectcore.a \
+		${AM_LDADD}
 
 bin_PROGRAMS += evcollectd
 
@@ -103,12 +106,11 @@ libtesting_main_a_SOURCES = util/testing_main.cc
 TESTS += evcollect_test
 check_PROGRAMS += evcollect_test
 
-evcollect_test_LDADD = \
-		$(PCRE_LDFLAGS_) \
-		$(CURL_LDFLAGS_) \
-		$(PTHREAD_LDFLAGS_) \
+evcollect_test_LDFLAGS = \
 		libevcollectcore.a \
-		libtesting_main.a
+		libtesting_main.a \
+		${AM_LDADD}
 
 evcollect_test_SOURCES = \
+		configlexer_test.cc \
 		configparser_test.cc

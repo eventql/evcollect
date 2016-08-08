@@ -29,14 +29,6 @@
 
 namespace evcollect {
 
-struct PropertyList {
-  std::vector<std::pair<std::string, std::vector<std::string>>> properties;
-  bool get(const std::string& key, std::string* out) const;
-  size_t get(
-      const std::string& key,
-      std::vector<std::vector<std::string>>* out) const;
-};
-
 struct EventData {
   uint64_t time;
   std::string event_name;
@@ -51,9 +43,59 @@ extern "C" {
 
 typedef void evcollect_ctx_t;
 typedef void evcollect_plugin_cfg_t;
-typedef void evcollect_plugin_binding_t;
 typedef void evcollect_props_t;
 typedef void evcollect_event_t;
+
+void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
+
+enum evcollect_loglevel {
+  EVCOLLECT_LOG_FATAL = 10,
+  EVCOLLECT_LOG_EMERGENCY = 9,
+  EVCOLLECT_LOG_ALERT = 8,
+  EVCOLLECT_LOG_CRITICAL = 7,
+  EVCOLLECT_LOG_ERROR = 6,
+  EVCOLLECT_LOG_WARNING = 5,
+  EVCOLLECT_LOG_NOTICE = 4,
+  EVCOLLECT_LOG_INFO = 3,
+  EVCOLLECT_LOG_DEBUG = 2,
+  EVCOLLECT_LOG_TRACE = 1
+};
+
+void evcollect_log(
+    evcollect_loglevel level,
+    const char* msg);
+
+bool evcollect_plugin_getcfg(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    const char** value);
+
+bool evcollect_plugin_getcfgv(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    size_t i,
+    size_t j,
+    const char** value);
+
+void evcollect_event_getname(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size);
+
+void evcollect_event_setname(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size);
+
+void evcollect_event_getdata(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size);
+
+void evcollect_event_setdata(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size);
 
 typedef bool (*evcollect_plugin_getnextevent_fn)(
     evcollect_ctx_t* ctx,
@@ -71,16 +113,15 @@ typedef bool (*evcollect_plugin_emitevent_fn)(
 
 typedef bool (*evcollect_plugin_attach_fn)(
     evcollect_ctx_t* ctx,
-    const evcollect_plugin_binding_t* cfg,
-    void* userdata);
+    const evcollect_plugin_cfg_t* cfg,
+    void** userdata);
 
 typedef bool (*evcollect_plugin_detach_fn)(
     evcollect_ctx_t* ctx,
     void* userdata);
 
 typedef bool (*evcollect_plugin_init_fn)(
-    evcollect_ctx_t* ctx,
-    const evcollect_plugin_cfg_t* cfg);
+    evcollect_ctx_t* ctx);
 
 typedef void (*evcollect_plugin_free_fn)(
     evcollect_ctx_t* ctx);
@@ -104,16 +145,8 @@ void evcollect_output_plugin_register(
     evcollect_plugin_init_fn init_fn = nullptr,
     evcollect_plugin_free_fn free_fn = nullptr);
 
-void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
-
-void evcollect_event_setdata(
-    evcollect_event_t* ev,
-    const char* data,
-    size_t size);
-
 __attribute__((visibility("default"))) bool __evcollect_plugin_init(
     evcollect_ctx_t* ctx);
-
 
 }
 

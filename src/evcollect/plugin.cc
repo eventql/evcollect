@@ -60,7 +60,7 @@ DynamicSourcePlugin::DynamicSourcePlugin(
     free_fn_(free_fn) {}
 
 ReturnCode DynamicSourcePlugin::pluginInit(const PluginConfig& cfg) {
-  if (!init_fn_ || init_fn_(ctx_, &cfg)) {
+  if (!init_fn_ || init_fn_(ctx_)) {
     return ReturnCode::success();
   } else {
     return ReturnCode::error(
@@ -149,7 +149,7 @@ DynamicOutputPlugin::DynamicOutputPlugin(
     free_fn_(free_fn) {}
 
 ReturnCode DynamicOutputPlugin::pluginInit(const PluginConfig& cfg) {
-  if (!init_fn_ || init_fn_(ctx_, &cfg)) {
+  if (!init_fn_ || init_fn_(ctx_)) {
     return ReturnCode::success();
   } else {
     return ReturnCode::error(
@@ -198,13 +198,7 @@ ReturnCode DynamicOutputPlugin::pluginEmitEvent(
 }
 
 ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
-  if (!StringUtil::beginsWith(plugin_path, "/") &&
-      !StringUtil::beginsWith(plugin_path, "./") &&
-      !StringUtil::beginsWith(plugin_path, "../")) {
-    plugin_path = "./" + plugin_path;
-  }
-
-  logDebug("Loading plugin: $0", plugin_path);
+  logInfo("Loading plugin: $0", plugin_path);
   void* dl = dlopen(plugin_path.c_str(), RTLD_NOW);
   if (!dl) {
     return ReturnCode::error(
@@ -239,9 +233,90 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
 
 } // namespace evcollect
 
+void evcollect_log(
+    evcollect_loglevel level,
+    const char* msg) {
+  switch (level) {
+    case EVCOLLECT_LOG_FATAL:
+      logFatal(msg);
+      break;
+    case EVCOLLECT_LOG_EMERGENCY:
+      logEmergency(msg);
+      break;
+    case EVCOLLECT_LOG_ALERT:
+      logAlert(msg);
+      break;
+    case EVCOLLECT_LOG_CRITICAL:
+      logCritical(msg);
+      break;
+    case EVCOLLECT_LOG_ERROR:
+      logError(msg);
+      break;
+    case EVCOLLECT_LOG_WARNING:
+      logWarning(msg);
+      break;
+    case EVCOLLECT_LOG_NOTICE:
+      logNotice(msg);
+      break;
+    case EVCOLLECT_LOG_INFO:
+      logInfo(msg);
+      break;
+    case EVCOLLECT_LOG_DEBUG:
+      logDebug(msg);
+      break;
+    case EVCOLLECT_LOG_TRACE:
+      logTrace(msg);
+      break;
+  }
+}
+
 void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
   auto ctx_ = static_cast<evcollect::PluginContext*>(ctx);
   ctx_->error = std::string(error);
+}
+
+bool evcollect_plugin_getcfg(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    const char** value) {
+  auto cfg_ = static_cast<const evcollect::PropertyList*>(cfg);
+  return cfg_->get(key, value);
+}
+
+bool evcollect_plugin_getcfgv(
+    const evcollect_plugin_cfg_t* cfg,
+    const char* key,
+    size_t i,
+    size_t j,
+    const char** value) {
+  auto cfg_ = static_cast<const evcollect::PropertyList*>(cfg);
+  return cfg_->getv(key, i, j, value);
+}
+
+void evcollect_event_getname(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size) {
+  auto ev_ = static_cast<const evcollect::EventData*>(ev);
+  *data = ev_->event_name.data();
+  *size = ev_->event_name.size();
+}
+
+void evcollect_event_setname(
+    evcollect_event_t* ev,
+    const char* data,
+    size_t size) {
+  auto ev_ = static_cast<evcollect::EventData*>(ev);
+  ev_->event_name = std::string(data, size);
+}
+
+void evcollect_event_getdata(
+    const evcollect_event_t* ev,
+    const char** data,
+    size_t* size) {
+  auto ev_ = static_cast<const evcollect::EventData*>(ev);
+  *data = ev_->event_data.data();
+  *size = ev_->event_data.size();
 }
 
 void evcollect_event_setdata(

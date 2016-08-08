@@ -31,12 +31,17 @@ namespace evcollect {
 class SourcePlugin;
 class OutputPlugin;
 struct ProcessConfig;
+struct PluginContext;
 
 class PluginMap {
 public:
 
   PluginMap(const ProcessConfig* config);
   ~PluginMap();
+
+  ReturnCode loadPlugin(
+      const std::string& plugin_name,
+      PluginContext* ctx) const;
 
   void registerSourcePlugin(
       const std::string& plugin_name,
@@ -53,6 +58,7 @@ public:
   ReturnCode getOutputPlugin(
       const std::string& plugin_name,
       OutputPlugin** plugin) const;
+
 
 protected:
 

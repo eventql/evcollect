@@ -191,6 +191,8 @@ int main(int argc, const char** argv) {
 
   /* load config */
   ProcessConfig conf;
+  conf.plugin_dir = flags.getString("plugin_path");
+
   {
     auto config_path = flags.getString("config");
     if (config_path.empty()) {
@@ -214,16 +216,24 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
+  for (const auto& plugin_path : flags.getStrings("plugin")) {
+    conf.load_plugins.push_back(plugin_path);
+  }
+
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
   LogfileSourcePlugin::registerPlugin(plugin_map.get());
 
   PluginContext plugin_ctx;
   plugin_ctx.plugin_map = plugin_map.get();
-  for (const auto& plugin_path : flags.getStrings("plugin")) {
-    auto rc = loadPlugin(&plugin_ctx, plugin_path);
+  for (const auto& plugin : conf.load_plugins) {
+    auto rc = plugin_map->loadPlugin(plugin, &plugin_ctx);
     if (!rc.isSuccess()) {
-      logFatal("error: $0", rc.getMessage());
+      logFatal(
+          "error while loading plugin '$0': $1",
+          plugin,
+          rc.getMessage());
+
       return 1;
     }
   }
