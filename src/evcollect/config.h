@@ -25,6 +25,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <sstream>
 #include <evcollect/evcollect.h>
 #include <evcollect/util/return_code.h>
 
@@ -69,5 +70,112 @@ struct ProcessConfig {
 ReturnCode loadConfig(
     const std::string& config_file_path,
     ProcessConfig* config);
+
+enum class ConfigToken {
+  Unknown,
+  Eof,
+  End,
+  Name,
+  Value,
+  Event,
+  Source,
+  Output,
+  Plugin,
+};
+
+class ConfigLexer {
+ public:
+  ConfigLexer(const std::string& label, std::unique_ptr<std::istream>&& input);
+
+  static std::unique_ptr<ConfigLexer> fromString(const std::string& config);
+  static std::unique_ptr<ConfigLexer> fromLocalFile(const std::string& path);
+
+  bool eof() const;
+  ConfigToken nextToken();
+
+  ConfigToken currentToken() const noexcept;
+  int currentLineNr() const noexcept;
+  int currentColumn() const noexcept;
+  std::string currentContext() const;
+
+  std::string stringValue() const;
+
+ private:
+  int currentChar() const noexcept;
+  int peekChar();
+  int nextChar();
+  bool consumeSpace();
+  bool consumeEndOfLine();
+
+  ConfigToken parseName();
+  ConfigToken parseValue();
+  ConfigToken parseString();
+  ConfigToken parseRegEx();
+
+ private:
+  std::string label_;
+  std::unique_ptr<std::istream> input_;
+  ConfigToken currentToken_;
+  int currentLineNr_;
+  int currentColumn_;
+  int currentChar_;
+  std::stringstream stringValue_;
+};
+
+// {{{ inlines
+inline ConfigToken ConfigLexer::currentToken() const noexcept {
+  return currentToken_;
+}
+
+inline int ConfigLexer::currentLineNr() const noexcept {
+  return currentLineNr_;
+}
+
+inline int ConfigLexer::currentColumn() const noexcept {
+  return currentColumn_;
+}
+
+inline int ConfigLexer::currentChar() const noexcept {
+  return currentChar_;
+}
+
+inline std::string ConfigLexer::stringValue() const {
+  return stringValue_.str();
+}
+// }}}
+
+class ConfigParser {
+ public:
+  ConfigParser(std::unique_ptr<ConfigLexer> lexer, ProcessConfig* result);
+
+  ReturnCode parse();
+
+ private:
+  std::string stringValue() const;
+  ConfigToken currentToken() const noexcept;
+  ConfigToken nextToken();
+  bool eof() const;
+
+  ReturnCode consumeName(std::string* output);
+  ReturnCode consumePath(std::string* output);
+  ReturnCode consumeValue(std::string* output);
+  ReturnCode consumeEndOfLine();
+  ReturnCode consumeToken(ConfigToken expected);
+
+  ReturnCode goal();
+  ReturnCode pluginDecl();
+  ReturnCode eventDecl(EventBindingConfig* output);
+  ReturnCode applyEventProperties(const PropertyList& props,
+                                  EventBindingConfig* output);
+  ReturnCode outputDecl(TargetBindingConfig* output);
+  ReturnCode outputProperty();
+  ReturnCode propertyList(PropertyList* output);
+
+  ReturnCode unexpectedToken();
+
+ private:
+  std::unique_ptr<ConfigLexer> lexer_;
+  ProcessConfig* config_;
+};
 
 } // namespace evcollect

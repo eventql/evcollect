@@ -48,11 +48,7 @@ AM_CFLAGS =  $(PTHREAD_CFLAGS) $(PTHREAD_DEF) $(SYSLOG_DEF) $(ZLIB_DEF) $(GETHOS
 AM_LDFLAGS = $(PTHREAD_CFLAGS)
 AM_LDADD = $(PCRE_LDFLAGS_) $(CURL_LDFLAGS_) $(PTHREAD_LDFLAGS_) $(DL_LDFLAGS_)
 
-################# LIB: libevcollectcore #################
-
-noinst_LIBRARIES += libevcollectcore.a
-
-libevcollectcore_a_SOURCES = \
+EVCOLLECT_SOURCES_ = \
 		util/ansicolor.h \
 		util/ansicolor.cc \
     util/logging.h \
@@ -73,10 +69,6 @@ libevcollectcore_a_SOURCES = \
     util/base64.h \
     config.h \
     config.cc \
-    configlexer.h \
-    configlexer.cc \
-    configparser.h \
-    configparser.cc \
     plugin.h \
     plugin.cc \
     plugin_map.h \
@@ -87,30 +79,26 @@ libevcollectcore_a_SOURCES = \
     dispatch.cc \
     evcollect.h
 
-################# BIN: evcollectd ####################
-evcollectd_SOURCES = evcollectd.cc
+####### EVCOLLECTD ############################################################
+
+evcollectd_SOURCES = \
+		${EVCOLLECT_SOURCES_} \
+		evcollectd.cc
 
 evcollectd_LDADD = \
-		libevcollectcore.a \
 		${AM_LDADD}
 
 bin_PROGRAMS += evcollectd
 
-####### libtesting_main.a ################################################
-
-noinst_LIBRARIES += libtesting_main.a
-libtesting_main_a_SOURCES = util/testing_main.cc
-
 ####### TESTS #################################################################
 
-TESTS += evcollect_test
-check_PROGRAMS += evcollect_test
+TESTS += evcollectd_test
+check_PROGRAMS += evcollectd_test
 
-evcollect_test_LDFLAGS = \
-		libevcollectcore.a \
-		libtesting_main.a \
+evcollectd_test_LDFLAGS = \
 		${AM_LDADD}
 
-evcollect_test_SOURCES = \
-		configlexer_test.cc \
-		configparser_test.cc
+evcollectd_test_SOURCES = \
+		util/testing_main.cc \
+		${EVCOLLECT_SOURCES_} \
+		evcollectd_test.cc

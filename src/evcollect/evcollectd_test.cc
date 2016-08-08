@@ -1,7 +1,4 @@
 #include <evcollect/util/testing.h>
-#include <evcollect/configlexer.h>
-
-using namespace evcollect;
 
 TEST(ConfigLexer, empty) {
   auto lexer = ConfigLexer::fromString("");
@@ -84,4 +81,9 @@ TEST(ConfigLexer, eventDecl_example1) {
   lexer->nextToken();
   ASSERT_EQ(ConfigToken::End, lexer->currentToken());
   ASSERT_EQ("LF", lexer->stringValue());
+}
+
+TEST(ConfigParser, Blurb) {
+  logf("Blurbed $0", "!");
+  ASSERT_EQ(2, 1 + 1);
 }
