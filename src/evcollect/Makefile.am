@@ -73,6 +73,10 @@ libevcollectcore_a_SOURCES = \
     util/base64.h \
     config.h \
     config.cc \
+    configlexer.h \
+    configlexer.cc \
+    configparser.h \
+    configparser.cc \
     plugin.h \
     plugin.cc \
     plugin_map.h \
@@ -108,4 +112,5 @@ evcollect_test_LDFLAGS = \
 		${AM_LDADD}
 
 evcollect_test_SOURCES = \
+		configlexer_test.cc \
 		configparser_test.cc
