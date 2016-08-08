@@ -23,7 +23,7 @@
  */
 #include <string>
 #include <set>
-#include <evcollect/dispatch.h>
+#include <evcollect/service.h>
 #include <evcollect/plugin.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/util/time.h>
@@ -39,7 +39,7 @@ std::string mergeEvents(const std::string& base, const std::string& overlay) {
 
 } // namespace
 
-Dispatch::Dispatch() :
+Service::Service() :
     queue_([] (EventBinding* a, EventBinding* b) {
       return a->next_tick < b->next_tick;
     }),
@@ -50,21 +50,21 @@ Dispatch::Dispatch() :
   }
 }
 
-Dispatch::~Dispatch() {
+Service::~Service() {
   close(wakeup_pipe_[0]);
   close(wakeup_pipe_[1]);
 }
 
-void Dispatch::addEventBinding(EventBinding* binding) {
+void Service::addEventBinding(EventBinding* binding) {
   binding->next_tick = MonotonicClock::now() + binding->interval_micros;
   queue_.insert(binding);
 }
 
-void Dispatch::addTargetBinding(TargetBinding* binding) {
+void Service::addTargetBinding(TargetBinding* binding) {
   targets_.push_back(binding);
 }
 
-ReturnCode Dispatch::emitEvent(
+ReturnCode Service::emitEvent(
     EventBinding* binding,
     uint64_t time,
     const std::string& event_data) {
@@ -77,7 +77,7 @@ ReturnCode Dispatch::emitEvent(
   return deliverEvent(evdata);
 }
 
-ReturnCode Dispatch::deliverEvent(const EventData& evdata) {
+ReturnCode Service::deliverEvent(const EventData& evdata) {
   auto rc_aggr = ReturnCode::success();
   for (const auto& t : targets_) {
     auto rc = t->plugin->pluginEmitEvent(t->userdata, evdata);
@@ -89,7 +89,7 @@ ReturnCode Dispatch::deliverEvent(const EventData& evdata) {
   return rc_aggr;
 }
 
-ReturnCode Dispatch::run() {
+ReturnCode Service::run() {
   if (queue_.size() == 0) {
     return ReturnCode::success();
   }
@@ -157,7 +157,7 @@ ReturnCode Dispatch::run() {
   }
 }
 
-ReturnCode Dispatch::runOnce(EventBinding* binding) {
+ReturnCode Service::runOnce(EventBinding* binding) {
   if (binding->sources.empty()) {
     return ReturnCode::success();
   }
@@ -204,7 +204,7 @@ ReturnCode Dispatch::runOnce(EventBinding* binding) {
   return ReturnCode::success();
 }
 
-void Dispatch::kill() {
+void Service::kill() {
   char data = 0;
   int rc = write(wakeup_pipe_[1], &data, 1);
   (void) rc;

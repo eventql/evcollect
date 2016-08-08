@@ -50,11 +50,11 @@ struct TargetBinding {
   void* userdata;
 };
 
-class Dispatch {
+class Service {
 public:
 
-  Dispatch();
-  ~Dispatch();
+  Service();
+  ~Service();
 
   void addEventBinding(EventBinding* binding);
   void addTargetBinding(TargetBinding* binding);

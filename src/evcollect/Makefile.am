@@ -73,8 +73,8 @@ EVCOLLECT_SOURCES_ = \
     plugin.cc \
     logfile.h \
     logfile.cc \
-    dispatch.h \
-    dispatch.cc \
+    service.h \
+    service.cc \
     evcollect.h
 
 ####### EVCOLLECTD ############################################################

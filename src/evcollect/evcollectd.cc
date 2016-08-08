@@ -34,7 +34,7 @@
 #include <evcollect/util/logging.h>
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin.h>
-#include <evcollect/dispatch.h>
+#include <evcollect/service.h>
 #include <evcollect/config.h>
 #include <evcollect/logfile.h>
 
@@ -43,7 +43,7 @@ using namespace evcollect;
 void shutdown(int);
 ReturnCode daemonize();
 
-static Dispatch* dispatch;
+static Service* service;
 
 int main(int argc, const char** argv) {
   signal(SIGTERM, shutdown);
@@ -345,18 +345,18 @@ int main(int argc, const char** argv) {
     }
   }
 
-  /* main dispatch loop */
+  /* main service loop */
   if (rc.isSuccess()) {
     logInfo("Starting with $0 event bindings", event_bindings.size());
-    dispatch = new Dispatch();
+    service = new Service();
     for (const auto& binding : event_bindings) {
-      dispatch->addEventBinding(binding.get());
+      service->addEventBinding(binding.get());
     }
     for (const auto& binding : target_bindings) {
-      dispatch->addTargetBinding(binding.get());
+      service->addTargetBinding(binding.get());
     }
 
-    rc = dispatch->run();
+    rc = service->run();
   }
 
   if (!rc.isSuccess()) {
@@ -376,7 +376,7 @@ int main(int argc, const char** argv) {
 
   logInfo("Exiting...");
 
-  delete dispatch;
+  delete service;
   plugin_map.reset(nullptr);
 
   /* unlock pidfile */
@@ -393,8 +393,8 @@ int main(int argc, const char** argv) {
 }
 
 void shutdown(int) {
-  if (dispatch) {
-    dispatch->kill();
+  if (service) {
+    service->kill();
   }
 }
 
