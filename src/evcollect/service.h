@@ -27,7 +27,6 @@
 #include <mutex>
 #include <condition_variable>
 #include <evcollect/evcollect.h>
-#include <evcollect/config.h>
 #include <evcollect/plugin.h>
 #include <evcollect/util/return_code.h>
 
@@ -38,13 +37,20 @@ class OutputPlugin;
 class Service {
 public:
 
-  Service();
+  Service(
+      const std::string& spool_dir,
+      const std::string& plugin_dir);
+
   ~Service();
+
+  ReturnCode addEvent(const EventBindingConfig* event_binding);
+  ReturnCode addTarget(const TargetBindingConfig* target_cfg);
+
+  ReturnCode loadPlugin(const std::string& plugin);
 
   const std::string& getSpoolDir() const;
   const std::string& getPluginDir() const;
 
-  ReturnCode configure(const ProcessConfig* conf);
   ReturnCode run();
   void kill();
 

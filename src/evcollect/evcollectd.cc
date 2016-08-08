@@ -220,8 +220,34 @@ int main(int argc, const char** argv) {
   }
 
   /* setup service */
-  service = new Service();
-  auto rc = service->configure(&conf);
+  auto rc = ReturnCode::success();
+  service = new Service(
+      conf.spool_dir,
+      conf.plugin_dir);
+
+  for (const auto& plugin : conf.load_plugins) {
+    if (!rc.isSuccess()) {
+      break;
+    }
+
+    rc = service->loadPlugin(plugin);
+  }
+
+  for (const auto& binding : conf.event_bindings) {
+    if (!rc.isSuccess()) {
+      break;
+    }
+
+    rc = service->addEvent(&binding);
+  }
+
+  for (const auto& binding : conf.target_bindings) {
+    if (!rc.isSuccess()) {
+      break;
+    }
+
+    rc = service->addTarget(&binding);
+  }
 
   /* daemonize */
   if (rc.isSuccess() && flags.isSet("daemonize")) {
