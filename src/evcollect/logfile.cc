@@ -34,7 +34,7 @@
 #include <evcollect/util/logging.h>
 #include <evcollect/util/sha1.h>
 #include <evcollect/logfile.h>
-#include <evcollect/plugin_map.h>
+#include <evcollect/plugin.h>
 #include <pcre.h>
 
 namespace evcollect {

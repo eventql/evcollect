@@ -23,6 +23,8 @@
  */
 #pragma once
 #include <string>
+#include <unordered_map>
+#include <mutex>
 #include <evcollect/evcollect.h>
 #include <evcollect/config.h>
 #include <evcollect/util/return_code.h>
@@ -172,6 +174,50 @@ protected:
   evcollect_plugin_detach_fn detach_fn_;
   evcollect_plugin_init_fn init_fn_;
   evcollect_plugin_free_fn free_fn_;
+};
+
+class PluginMap {
+public:
+
+  PluginMap(const ProcessConfig* config);
+  ~PluginMap();
+
+  ReturnCode loadPlugin(
+      const std::string& plugin_name,
+      PluginContext* ctx) const;
+
+  void registerSourcePlugin(
+      const std::string& plugin_name,
+      std::unique_ptr<SourcePlugin> plugin);
+
+  ReturnCode getSourcePlugin(
+      const std::string& plugin_name,
+      SourcePlugin** plugin) const;
+
+  void registerOutputPlugin(
+      const std::string& plugin_name,
+      std::unique_ptr<OutputPlugin> plugin);
+
+  ReturnCode getOutputPlugin(
+      const std::string& plugin_name,
+      OutputPlugin** plugin) const;
+
+
+protected:
+
+  struct SourcePluginBinding {
+    std::unique_ptr<SourcePlugin> plugin;
+    bool plugin_initialized;
+  };
+
+  struct OutputPluginBinding {
+    std::unique_ptr<OutputPlugin> plugin;
+    bool plugin_initialized;
+  };
+
+  const ProcessConfig* config_;
+  mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
+  mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
 };
 
 ReturnCode loadPlugin(

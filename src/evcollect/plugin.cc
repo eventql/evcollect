@@ -22,8 +22,10 @@
  * code of your own applications
  */
 #include <dlfcn.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <evcollect/plugin.h>
-#include <evcollect/plugin_map.h>
 #include <evcollect/util/logging.h>
 
 namespace evcollect {
@@ -228,6 +230,119 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
         plugin_ctx->error.c_str());
   }
 
+  return ReturnCode::success();
+}
+
+PluginMap::PluginMap(const ProcessConfig* config) : config_(config) {}
+
+PluginMap::~PluginMap() {
+  for (auto& plugin : source_plugins_) {
+    if (!plugin.second.plugin_initialized) {
+      continue;
+    }
+
+    plugin.second.plugin->pluginFree();
+  }
+}
+
+ReturnCode PluginMap::loadPlugin(
+    const std::string& plugin_name,
+    PluginContext* ctx) const {
+  std::vector<std::string> path_candidates;
+  path_candidates.emplace_back(plugin_name);
+  if (plugin_name.find("/") == std::string::npos) {
+    path_candidates.emplace_back(config_->plugin_dir + "/" + plugin_name);
+    path_candidates.emplace_back(
+        config_->plugin_dir + "/plugin_" + plugin_name + ".so");
+  }
+
+  for (const auto& path : path_candidates) {
+    struct stat s;
+    if (stat(path.c_str(), &s) != 0) {
+      continue;
+    }
+
+    return evcollect::loadPlugin(ctx, path);
+  }
+
+  return ReturnCode::error(
+      "EPLUGIN",
+      StringUtil::format(
+          "plugin not found -- tried $0",
+          StringUtil::join(path_candidates, ", ")));
+}
+
+void PluginMap::registerSourcePlugin(
+    const std::string& plugin_name,
+    std::unique_ptr<SourcePlugin> plugin) {
+  SourcePluginBinding plugin_binding;
+  plugin_binding.plugin = std::move(plugin);
+  plugin_binding.plugin_initialized = false;
+  source_plugins_.emplace(plugin_name, std::move(plugin_binding));
+}
+
+ReturnCode PluginMap::getSourcePlugin(
+    const std::string& plugin_name,
+    SourcePlugin** plugin) const {
+  auto iter = source_plugins_.find(plugin_name);
+  if (iter == source_plugins_.end()) {
+    return ReturnCode::error(
+        "PLUGIN_NOT_FOUND",
+        "plugin not found: %s",
+        plugin_name.c_str());
+  }
+
+  auto& plugin_iter = iter->second;
+  if (!plugin_iter.plugin_initialized) {
+    PluginConfig pc;
+    pc.spool_dir = config_->spool_dir;
+
+    auto rc = plugin_iter.plugin->pluginInit(pc);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+
+    plugin_iter.plugin_initialized = true;
+  }
+
+  *plugin = plugin_iter.plugin.get();
+  return ReturnCode::success();
+}
+
+void PluginMap::registerOutputPlugin(
+    const std::string& plugin_name,
+    std::unique_ptr<OutputPlugin> plugin) {
+  OutputPluginBinding plugin_binding;
+  plugin_binding.plugin = std::move(plugin);
+  plugin_binding.plugin_initialized = false;
+  output_plugins_.emplace(plugin_name, std::move(plugin_binding));
+}
+
+ReturnCode PluginMap::getOutputPlugin(
+    const std::string& plugin_name,
+    OutputPlugin** plugin) const {
+  auto iter = output_plugins_.find(plugin_name);
+  if (iter == output_plugins_.end()) {
+    return ReturnCode::error(
+        "PLUGIN_NOT_FOUND",
+        "output plugin not found: %s",
+        plugin_name.c_str());
+  }
+
+  auto& plugin_iter = iter->second;
+  if (!plugin_iter.plugin_initialized) {
+    PluginConfig pc;
+    pc.spool_dir = config_->spool_dir;
+
+    auto rc = plugin_iter.plugin->pluginInit(pc);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+
+    plugin_iter.plugin_initialized = true;
+  }
+
+  *plugin = plugin_iter.plugin.get();
   return ReturnCode::success();
 }
 

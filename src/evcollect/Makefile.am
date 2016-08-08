@@ -71,8 +71,6 @@ EVCOLLECT_SOURCES_ = \
     config.cc \
     plugin.h \
     plugin.cc \
-    plugin_map.h \
-    plugin_map.cc \
     logfile.h \
     logfile.cc \
     dispatch.h \

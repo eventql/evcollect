@@ -34,7 +34,6 @@
 #include <evcollect/util/logging.h>
 #include <evcollect/evcollect.h>
 #include <evcollect/plugin.h>
-#include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
 #include <evcollect/logfile.h>
