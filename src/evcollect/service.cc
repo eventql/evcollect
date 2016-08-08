@@ -213,7 +213,7 @@ ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
       continue;
     }
 
-    auto rc = evcollect::loadPlugin(&plugin_ctx, path);
+    auto rc = evcollect::loadPlugin(&plugin_ctx, plugin, path);
     if (rc.isSuccess()) {
       return rc;
     } else {

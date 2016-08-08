@@ -200,7 +200,10 @@ ReturnCode DynamicOutputPlugin::pluginEmitEvent(
   }
 }
 
-ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
+ReturnCode loadPlugin(
+    PluginContext* plugin_ctx,
+    std::string plugin_name,
+    std::string plugin_path) {
   logInfo("Loading plugin: $0", plugin_path);
   void* dl = dlopen(plugin_path.c_str(), RTLD_NOW);
   if (!dl) {
@@ -211,14 +214,16 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
         dlerror());
   }
 
-  auto dl_init = dlsym(dl, "__evcollect_plugin_init");
+  auto plugin_init_fn = StringUtil::format("plugin_$0_init", plugin_name);
+  auto dl_init = dlsym(dl, plugin_init_fn.c_str());
   if (!dl_init) {
     dlclose(dl);
     return ReturnCode::error(
         "EIO",
-        "error while loading plugin: %s: %s [evcollect_plugin_init() not found]",
+        "error while loading plugin: %s: %s [symbol '%s' not found]",
         plugin_path.c_str(),
-        dlerror());
+        dlerror(),
+        plugin_init_fn.c_str());
   }
 
   auto rc = loadPlugin(plugin_ctx, (bool (*)(evcollect_ctx_t*)) dl_init);

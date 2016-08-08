@@ -223,6 +223,7 @@ protected:
 
 ReturnCode loadPlugin(
     PluginContext* ctx,
+    std::string plugin_name,
     std::string plugin_path);
 
 ReturnCode loadPlugin(
