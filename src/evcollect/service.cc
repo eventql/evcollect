@@ -357,4 +357,11 @@ void ServiceImpl::kill() {
 
 } // namespace
 
+static std::unique_ptr<Service> createService(
+    const std::string& spool_dir,
+    const std::string& plugin_dir) {
+  return std::unique_ptr<Service>(new ServiceImpl(spool_dir, plugin_dir));
+}
+
+
 } // namespace evcollect
