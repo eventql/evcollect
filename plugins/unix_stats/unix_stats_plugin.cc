@@ -85,7 +85,7 @@ bool getEvent(
   std::string hostname;
   std::string hostname_fqdn;
 
-  std::string evdata = "([";
+  std::string evdata = "[";
 
   auto mount_info = getMountInfo();
   for (size_t i = 0; i < mount_info.size(); ++i) {
@@ -98,10 +98,10 @@ bool getEvent(
       continue;
     }
 
-    auto total = (double) (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
-    auto available = (double) (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto total =  (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto available =  (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
     auto used = total - available;
-
+    auto capacity = total > 0 ? used / total : 1;
     auto ifree = buf.f_favail;
     auto iused = buf.f_files - ifree;
 
@@ -120,13 +120,13 @@ bool getEvent(
         total,
         used,
         available,
-        used / total,
+        capacity,
         iused,
         ifree,
         StringUtil::jsonEscape(mount_info[i].mount_point)));
   }
 
-  evdata.append("])");
+  evdata.append("]");
 
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
   return true;
