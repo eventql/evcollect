@@ -27,10 +27,11 @@
 #include <evcollect/plugin.h>
 
 namespace evcollect {
-namespace plugin_logfile {
 
 class LogfileSourcePlugin : public SourcePlugin {
 public:
+
+  static void registerPlugin(PluginMap* plugin_map);
 
   ReturnCode pluginInit(
       const PluginConfig& config) override;
@@ -53,5 +54,4 @@ protected:
   std::string spool_dir_;
 };
 
-} // namespace plugins_logfile
 } // namespace evcollect

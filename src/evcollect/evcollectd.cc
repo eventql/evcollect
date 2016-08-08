@@ -37,10 +37,7 @@
 #include <evcollect/plugin_map.h>
 #include <evcollect/dispatch.h>
 #include <evcollect/config.h>
-#include <evcollect/plugins/eventql/eventql_plugin.h>
-#include <evcollect/plugins/hostname/hostname_plugin.h>
-#include <evcollect/plugins/logfile/logfile_plugin.h>
-#include <evcollect/plugins/unix_stats/unix_stats_plugin.h>
+#include <evcollect/logfile.h>
 
 using namespace evcollect;
 
@@ -84,6 +81,20 @@ int main(int argc, const char** argv) {
       false,
       "c",
       NULL);
+
+  flags.defineFlag(
+      "plugin",
+      ::FlagParser::T_STRING,
+      false,
+      "p",
+      NULL);
+
+  flags.defineFlag(
+      "plugin_path",
+      ::FlagParser::T_STRING,
+      false,
+      "P",
+      "/usr/local/lib/evcollect/plugins");
 
   flags.defineFlag(
       "loglevel",
@@ -159,6 +170,8 @@ int main(int argc, const char** argv) {
         "Usage: $ evcollectd [OPTIONS]\n\n"
         "   -s, --spool_dir <dir>     Where to store temporary files\n"
         "   -c, --config <file>       Load config from file\n"
+        "   -p, --plugin <path>       Load a plugin (.so)\n"
+        "   -P, --plugin_path <dir>   Set the plugin search path\n"
         "   --daemonize               Daemonize the server\n"
         "   --pidfile <file>          Write a PID file\n"
         "   --loglevel <level>        Minimum log level (default: INFO)\n"
@@ -178,6 +191,8 @@ int main(int argc, const char** argv) {
 
   /* load config */
   ProcessConfig conf;
+  conf.plugin_dir = flags.getString("plugin_path");
+
   {
     auto config_path = flags.getString("config");
     if (config_path.empty()) {
@@ -201,21 +216,27 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
+  for (const auto& plugin_path : flags.getStrings("plugin")) {
+    conf.load_plugins.push_back(plugin_path);
+  }
+
   /* load plugins */
   std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
-  plugin_map->registerSourcePlugin(
-      "hostname",
-      std::unique_ptr<SourcePlugin>(new plugin_hostname::HostnamePlugin()));
-  plugin_map->registerSourcePlugin(
-      "logfile",
-      std::unique_ptr<SourcePlugin>(new plugin_logfile::LogfileSourcePlugin()));
-  plugin_map->registerSourcePlugin(
-      "unix_stats",
-      std::unique_ptr<SourcePlugin>(new plugin_unix_stats::UnixStatsPlugin()));
+  LogfileSourcePlugin::registerPlugin(plugin_map.get());
 
-  plugin_map->registerOutputPlugin(
-      "eventql",
-      std::unique_ptr<OutputPlugin>(new plugin_eventql::EventQLPlugin()));
+  PluginContext plugin_ctx;
+  plugin_ctx.plugin_map = plugin_map.get();
+  for (const auto& plugin : conf.load_plugins) {
+    auto rc = plugin_map->loadPlugin(plugin, &plugin_ctx);
+    if (!rc.isSuccess()) {
+      logFatal(
+          "error while loading plugin '$0': $1",
+          plugin,
+          rc.getMessage());
+
+      return 1;
+    }
+  }
 
   /* initialize event bindings */
   auto rc = ReturnCode::success();
@@ -225,10 +246,9 @@ int main(int argc, const char** argv) {
       break;
     }
 
-    auto ev_binding = new EventBinding();
+    std::unique_ptr<EventBinding> ev_binding(new EventBinding());
     ev_binding->event_name = binding.event_name;
     ev_binding->interval_micros = binding.interval_micros;
-    event_bindings.emplace_back(ev_binding);
 
     for (const auto& source : binding.sources) {
       EventSourceBinding ev_source;
@@ -250,6 +270,10 @@ int main(int argc, const char** argv) {
 
       ev_binding->sources.emplace_back(ev_source);
     }
+
+    if (rc.isSuccess()) {
+      event_bindings.emplace_back(std::move(ev_binding));
+    }
   }
 
   /* initialize target bindings */
@@ -259,8 +283,7 @@ int main(int argc, const char** argv) {
       break;
     }
 
-    auto trgt_binding = new TargetBinding();
-    target_bindings.emplace_back(trgt_binding);
+    std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
 
     rc = plugin_map->getOutputPlugin(
         binding.plugin_name,
@@ -277,6 +300,8 @@ int main(int argc, const char** argv) {
     if (!rc.isSuccess()) {
       break;
     }
+
+    target_bindings.emplace_back(std::move(trgt_binding));
   }
 
   /* daemonize */

@@ -28,9 +28,15 @@
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
+class PluginMap;
 
 struct PluginConfig {
   std::string spool_dir;
+};
+
+struct PluginContext {
+  std::string error;
+  PluginMap* plugin_map;
 };
 
 class SourcePlugin {
@@ -76,6 +82,35 @@ public:
 
 };
 
+class DynamicSourcePlugin : public SourcePlugin {
+public:
+
+  DynamicSourcePlugin(
+      PluginContext* ctx,
+      evcollect_plugin_getnextevent_fn getnextevent_fn,
+      evcollect_plugin_hasnextevent_fn hasnextevent_fn,
+      evcollect_plugin_attach_fn attach_fn,
+      evcollect_plugin_detach_fn detach_fn,
+      evcollect_plugin_init_fn init_fn,
+      evcollect_plugin_free_fn free_fn);
+
+  ReturnCode pluginInit(const PluginConfig& cfg) override;
+  void pluginFree() override;
+  ReturnCode pluginAttach(const PropertyList& config, void** userdata) override;
+  void pluginDetach(void* userdata) override;
+  ReturnCode pluginGetNextEvent(void* userdata, std::string* data) override;
+  bool pluginHasPendingEvent(void* userdata) override;
+
+protected:
+  PluginContext* ctx_;
+  evcollect_plugin_getnextevent_fn getnextevent_fn_;
+  evcollect_plugin_hasnextevent_fn hasnextevent_fn_;
+  evcollect_plugin_attach_fn attach_fn_;
+  evcollect_plugin_detach_fn detach_fn_;
+  evcollect_plugin_init_fn init_fn_;
+  evcollect_plugin_free_fn free_fn_;
+};
+
 class OutputPlugin {
 public:
 
@@ -113,4 +148,35 @@ public:
 
 };
 
+class DynamicOutputPlugin : public OutputPlugin {
+public:
+
+  DynamicOutputPlugin(
+      PluginContext* ctx,
+      evcollect_plugin_emitevent_fn emitevent_fn,
+      evcollect_plugin_attach_fn attach_fn,
+      evcollect_plugin_detach_fn detach_fn,
+      evcollect_plugin_init_fn init_fn,
+      evcollect_plugin_free_fn free_fn);
+
+  ReturnCode pluginInit(const PluginConfig& cfg) override;
+  void pluginFree() override;
+  ReturnCode pluginAttach(const PropertyList& config, void** userdata) override;
+  void pluginDetach(void* userdata) override;
+  ReturnCode pluginEmitEvent(void* userdata, const EventData& evdata) override;
+
+protected:
+  PluginContext* ctx_;
+  evcollect_plugin_emitevent_fn emitevent_fn_;
+  evcollect_plugin_attach_fn attach_fn_;
+  evcollect_plugin_detach_fn detach_fn_;
+  evcollect_plugin_init_fn init_fn_;
+  evcollect_plugin_free_fn free_fn_;
+};
+
+ReturnCode loadPlugin(
+    PluginContext* ctx,
+    std::string plugin_path);
+
 } // namespace evcollect
+
