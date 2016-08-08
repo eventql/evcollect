@@ -26,6 +26,7 @@
 #include <evcollect/service.h>
 #include <evcollect/config.h>
 #include <evcollect/plugin.h>
+#include <evcollect/logfile.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/util/time.h>
 #include <unistd.h>
@@ -50,6 +51,8 @@ Service::Service(
       return a->next_tick < b->next_tick;
     }),
     listen_fd_(-1) {
+  LogfileSourcePlugin::registerPlugin(&plugin_map_);
+
   if (pipe(wakeup_pipe_) < 0) {
     logFatal("pipe() failed");
     abort();
@@ -69,6 +72,69 @@ Service::~Service() {
 
   close(wakeup_pipe_[0]);
   close(wakeup_pipe_[1]);
+}
+
+ReturnCode Service::addEvent(const EventBindingConfig* binding) {
+  std::unique_ptr<EventBinding> ev_binding(new EventBinding());
+  ev_binding->event_name = binding->event_name;
+  ev_binding->interval_micros = binding->interval_micros;
+
+  for (const auto& source : binding->sources) {
+    EventSourceBinding ev_source;
+    {
+      auto rc = plugin_map_.getSourcePlugin(
+          source.plugin_name,
+          &ev_source.plugin);
+
+      if (!rc.isSuccess()) {
+        return rc;
+      }
+    }
+
+    {
+      auto rc = ev_source.plugin->pluginAttach(
+          source.properties,
+          &ev_source.userdata);
+
+      if (!rc.isSuccess()) {
+        return rc;
+      }
+    }
+
+    ev_binding->sources.emplace_back(ev_source);
+  }
+
+  ev_binding->next_tick = MonotonicClock::now() + ev_binding->interval_micros;
+  queue_.insert(ev_binding.get());
+  event_bindings_.emplace_back(std::move(ev_binding));
+  return ReturnCode::success();
+}
+
+ReturnCode Service::addTarget(const TargetBindingConfig* binding) {
+  std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
+
+  {
+    auto rc = plugin_map_.getOutputPlugin(
+        binding->plugin_name,
+        &trgt_binding->plugin);
+
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+  }
+
+  {
+    auto rc = trgt_binding->plugin->pluginAttach(
+        binding->properties,
+        &trgt_binding->userdata);
+
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+  }
+
+  targets_.emplace_back(std::move(trgt_binding));
+  return ReturnCode::success();
 }
 
 ReturnCode Service::loadPlugin(const std::string& plugin) {

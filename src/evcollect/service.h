@@ -47,6 +47,7 @@ public:
   ReturnCode addTarget(const TargetBindingConfig* target_cfg);
 
   ReturnCode loadPlugin(const std::string& plugin);
+  ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx));
 
   const std::string& getSpoolDir() const;
   const std::string& getPluginDir() const;
