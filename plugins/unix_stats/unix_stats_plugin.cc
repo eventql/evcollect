@@ -29,9 +29,11 @@
 #include <evcollect/evcollect.h>
 #include <evcollect/util/stringutil.h>
 
-#ifdef linux
+#if __linux__
 #include <mntent.h>
-#elif __APPLE__
+#endif
+
+#if __APPLE__
 #include <sys/param.h>
 #include <sys/ucred.h>
 #include <sys/mount.h>
@@ -47,14 +49,13 @@ struct MountInfo {
 
 static std::vector<MountInfo> getMountInfo() {
 std::vector<MountInfo> mount_info;
-#ifdef linux
+#ifdef __linux__
 
-  auto file = setmentent("/etc/fstab", "r");
+  auto file = setmntent("/etc/mtab", "r");
   while (auto mntent = getmntent(file)) {
-    printf("filesystemt: %s, mounted on: %s", mntent.mnt_fsname, mntent.mnt_dir);
     MountInfo mn_info = {
-      .device = mntent.mnt_fsname,
-      .mount_point = mntent.mnt_dir
+      .device = mntent->mnt_fsname,
+      .mount_point = mntent->mnt_dir
     };
 
     mount_info.emplace_back(mn_info);
@@ -73,6 +74,8 @@ std::vector<MountInfo> mount_info;
     mount_info.emplace_back(mn_info);
   }
 
+#else
+#error "unsupported os" 
 #endif
 
   return mount_info;
