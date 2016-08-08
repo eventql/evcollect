@@ -23,6 +23,7 @@
  */
 #include <string>
 #include <set>
+#include <regex>
 #include <dlfcn.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -201,11 +202,26 @@ ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
   plugin_ctx.plugin_map = &plugin_map_;
 
   std::vector<std::string> path_candidates;
-  path_candidates.emplace_back(plugin);
-  if (plugin.find("/") == std::string::npos) {
-    path_candidates.emplace_back(plugin_dir_ + "/" + plugin);
-    path_candidates.emplace_back(plugin_dir_ + "/plugin_" + plugin + ".so");
+  std::string plugin_name;
+  if (StringUtil::isShellSafe(plugin)) {
+    plugin_name = plugin;
+  } else {
+    path_candidates.emplace_back(plugin);
+    std::regex plugin_path_regex(".*plugin_(\\w+)(\\.\\w+)?");
+    std::smatch m;
+    if (!std::regex_match(plugin, m, plugin_path_regex)) {
+      return ReturnCode::error(
+          "EPLUGIN",
+          StringUtil::format(
+              "invalid plugin filename '$0' -- should be plugin_<name>.so",
+              plugin));
+    }
+
+    plugin_name = m[1];
   }
+
+  path_candidates.emplace_back(plugin_dir_ + "/" + plugin);
+  path_candidates.emplace_back(plugin_dir_ + "/plugin_" + plugin + ".so");
 
   for (const auto& path : path_candidates) {
     struct stat s;
@@ -213,7 +229,7 @@ ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
       continue;
     }
 
-    auto rc = evcollect::loadPlugin(&plugin_ctx, plugin, path);
+    auto rc = evcollect::loadPlugin(&plugin_ctx, plugin_name, path);
     if (rc.isSuccess()) {
       return rc;
     } else {
