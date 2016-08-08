@@ -7,6 +7,9 @@ AM_LDFLAGS = -fvisibility=hidden -module -avoid-version -shared -export-dynamic 
 noinst_LTLIBRARIES = plugin_hostname.la
 
 plugin_hostname_la_SOURCES = \
+    util/stringutil.cc \
+    util/stringutil.h \
+    util/stringutil_impl.h \
     hostname_plugin.cc
 
 PLUGINDIR=$(DESTDIR)$(libdir)/evcollect/plugins
