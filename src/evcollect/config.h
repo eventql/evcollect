@@ -42,6 +42,7 @@ struct PropertyList {
 
 struct EventSourceBindingConfig {
   std::string plugin_name;
+  std::string plugin_value;
   PropertyList properties;
 };
 
@@ -53,6 +54,7 @@ struct EventBindingConfig {
 
 struct TargetBindingConfig {
   std::string plugin_name;
+  std::string plugin_value;
   PropertyList properties;
 };
 
