@@ -33,21 +33,26 @@ ReturnCode loadConfig(
   conf->load_plugins.push_back("./plugins/eventql/.libs/plugin_eventql.so");
 
   {
+    // XXX: event sys.alive interval 1s
     conf->event_bindings.emplace_back();
     auto& b = conf->event_bindings.back();
     b.event_name = "sys.alive";
     b.interval_micros = 1000000;
+
+    // XXX: source plugin hostname
     b.sources.emplace_back();
     auto& s = b.sources.back();
     s.plugin_name = "hostname";
   }
+
   {
+    // XXX: event logs.access_log interval 1s
     conf->event_bindings.emplace_back();
     auto& b = conf->event_bindings.back();
     b.event_name = "logs.access_log";
     b.interval_micros = 1000000;
+    // XXX: source plugin logfile logfile "/tmp/log" regex /(?<fuu>[^\\|]*)?(?<bar>.*)/
     b.sources.emplace_back();
-
     auto& s = b.sources.back();
     s.plugin_name = "logfile";
     s.properties.properties.emplace_back(
@@ -62,20 +67,24 @@ ReturnCode loadConfig(
   }
 
   {
+    // XXX: target "eventql1" plugin eventql
     conf->target_bindings.emplace_back();
     auto& b = conf->target_bindings.back();
     b.plugin_name = "eventql";
 
+    // XXX: route logs.access_log "test/logs.access_log"
     b.properties.properties.emplace_back(
         std::make_pair(
             "route",
             std::vector<std::string> { "logs.access_log", "test/logs.access_log" }));
 
+    // XXX: route sys.alive "test/sys.alive"
     b.properties.properties.emplace_back(
         std::make_pair(
             "route",
             std::vector<std::string> { "sys.alive", "test/sys.alive" }));
 
+    // XXX: route sys.alive "test/sys.alive.rollup"
     b.properties.properties.emplace_back(
         std::make_pair(
             "route",
