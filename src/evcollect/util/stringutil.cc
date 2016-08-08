@@ -22,7 +22,7 @@
  * code of your own applications
  */
 #include <string>
-#include <evcollect/util/stringutil.h>
+#include "stringutil.h"
 
 void StringUtil::toStringVImpl(std::vector<std::string>* target) {}
 
