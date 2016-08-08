@@ -88,48 +88,58 @@ bool getEvent(
   std::string hostname;
   std::string hostname_fqdn;
 
-  std::string evdata = "[";
+  std::string evdata = R"({"disk_stats": [)";
 
-  auto mount_info = getMountInfo();
-  for (size_t i = 0; i < mount_info.size(); ++i) {
-    if (i > 0) {
-      evdata.append(",");
+  {
+    auto mount_info = getMountInfo();
+    for (size_t i = 0; i < mount_info.size(); ++i) {
+      if (i > 0) {
+        evdata.append(",");
+      }
+
+      struct statvfs buf;
+      if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
+        continue;
+      }
+
+      auto total =  (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
+      auto available =  (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
+      auto used = total - available;
+      auto capacity = total > 0 ? used / total : 1;
+      auto ifree = buf.f_favail;
+      auto iused = buf.f_files - ifree;
+
+      evdata.append(StringUtil::format(
+          R"({ 
+            "filesystem": "$0",
+            "total": $1,
+            "used": $2,
+            "available": $3,
+            "capacity": $4,
+            "iused": $5,
+            "ifree": $6,
+            "mount_point": "$7"
+          })",
+          StringUtil::jsonEscape(mount_info[i].device),
+          total,
+          used,
+          available,
+          capacity,
+          iused,
+          ifree,
+          StringUtil::jsonEscape(mount_info[i].mount_point)));
     }
 
-    struct statvfs buf;
-    if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
-      continue;
-    }
-
-    auto total =  (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
-    auto available =  (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
-    auto used = total - available;
-    auto capacity = total > 0 ? used / total : 1;
-    auto ifree = buf.f_favail;
-    auto iused = buf.f_files - ifree;
-
-    evdata.append(StringUtil::format(
-        R"({ 
-          "filesystem": "$0",
-          "total": $1,
-          "used": $2,
-          "available": $3,
-          "capacity": $4,
-          "iused": $5,
-          "ifree": $6,
-          "mount_point": "$7"
-        })",
-        StringUtil::jsonEscape(mount_info[i].device),
-        total,
-        used,
-        available,
-        capacity,
-        iused,
-        ifree,
-        StringUtil::jsonEscape(mount_info[i].mount_point)));
+    evdata.append("]}");
   }
 
-  evdata.append("]");
+
+#if __linux__
+  std::ifstream f("/proc/loadavg", std::ifstream::in);
+  while (f.good()) {
+    auto c = f.get();
+  }
+#endif
 
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
   return true;
