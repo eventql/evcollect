@@ -23,13 +23,16 @@
  */
 #include <string>
 #include <set>
+#include <dlfcn.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <evcollect/service.h>
 #include <evcollect/config.h>
 #include <evcollect/plugin.h>
 #include <evcollect/logfile.h>
 #include <evcollect/util/logging.h>
 #include <evcollect/util/time.h>
-#include <unistd.h>
 
 namespace evcollect {
 
@@ -196,15 +199,52 @@ ReturnCode ServiceImpl::addTarget(const TargetConfig* binding) {
 ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
   PluginContext plugin_ctx;
   plugin_ctx.plugin_map = &plugin_map_;
-  auto rc = plugin_map_.loadPlugin(plugin, &plugin_ctx);
+
+  std::vector<std::string> path_candidates;
+  path_candidates.emplace_back(plugin);
+  if (plugin.find("/") == std::string::npos) {
+    path_candidates.emplace_back(plugin_dir_ + "/" + plugin);
+    path_candidates.emplace_back(plugin_dir_ + "/plugin_" + plugin + ".so");
+  }
+
+  for (const auto& path : path_candidates) {
+    struct stat s;
+    if (stat(path.c_str(), &s) != 0) {
+      continue;
+    }
+
+    auto rc = evcollect::loadPlugin(&plugin_ctx, path);
+    if (rc.isSuccess()) {
+      return rc;
+    } else {
+      return ReturnCode::error(
+          "EPLUGIN",
+          StringUtil::format(
+              "error while loading plugin '$0': $1",
+              plugin,
+              rc.getMessage()));
+    }
+  }
+
+  return ReturnCode::error(
+      "EPLUGIN",
+      StringUtil::format(
+          "plugin not found -- tried $0",
+          StringUtil::join(path_candidates, ", ")));
+}
+
+ReturnCode ServiceImpl::loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) {
+  PluginContext plugin_ctx;
+  plugin_ctx.plugin_map = &plugin_map_;
+
+  auto rc = evcollect::loadPlugin(&plugin_ctx, init_fn);
   if (rc.isSuccess()) {
     return rc;
   } else {
     return ReturnCode::error(
         "EPLUGIN",
         StringUtil::format(
-            "error while loading plugin '$0': $1",
-            plugin,
+            "error while loading plugin: $0",
             rc.getMessage()));
   }
 }

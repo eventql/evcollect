@@ -221,17 +221,23 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
         dlerror());
   }
 
-  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(plugin_ctx);
-  if (!rc) {
+  auto rc = loadPlugin(plugin_ctx, (bool (*)(evcollect_ctx_t*)) dl_init);
+  if (!rc.isSuccess()) {
     dlclose(dl);
-    return ReturnCode::error(
-        "EIO",
-        "error while loading plugin: %s: %s",
-        plugin_path.c_str(),
-        plugin_ctx->error.c_str());
   }
 
-  return ReturnCode::success();
+  return rc;
+}
+
+ReturnCode loadPlugin(
+    PluginContext* plugin_ctx,
+    bool (*init_fn)(evcollect_ctx_t* ctx)) {
+  int rc = init_fn(plugin_ctx);
+  if (rc) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error("EPLUGIN", plugin_ctx->error);
+  }
 }
 
 PluginMap::PluginMap(
@@ -248,33 +254,6 @@ PluginMap::~PluginMap() {
 
     plugin.second.plugin->pluginFree();
   }
-}
-
-ReturnCode PluginMap::loadPlugin(
-    const std::string& plugin_name,
-    PluginContext* ctx) const {
-  std::vector<std::string> path_candidates;
-  path_candidates.emplace_back(plugin_name);
-  if (plugin_name.find("/") == std::string::npos) {
-    path_candidates.emplace_back(plugin_dir_ + "/" + plugin_name);
-    path_candidates.emplace_back(
-        plugin_dir_ + "/plugin_" + plugin_name + ".so");
-  }
-
-  for (const auto& path : path_candidates) {
-    struct stat s;
-    if (stat(path.c_str(), &s) != 0) {
-      continue;
-    }
-
-    return evcollect::loadPlugin(ctx, path);
-  }
-
-  return ReturnCode::error(
-      "EPLUGIN",
-      StringUtil::format(
-          "plugin not found -- tried $0",
-          StringUtil::join(path_candidates, ", ")));
 }
 
 void PluginMap::registerSourcePlugin(

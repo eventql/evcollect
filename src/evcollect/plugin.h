@@ -187,10 +187,6 @@ public:
 
   ~PluginMap();
 
-  ReturnCode loadPlugin(
-      const std::string& plugin_name,
-      PluginContext* ctx) const;
-
   void registerSourcePlugin(
       const std::string& plugin_name,
       std::unique_ptr<SourcePlugin> plugin);
@@ -228,6 +224,10 @@ protected:
 ReturnCode loadPlugin(
     PluginContext* ctx,
     std::string plugin_path);
+
+ReturnCode loadPlugin(
+    PluginContext* ctx,
+    bool (*init_fn)(evcollect_ctx_t* ctx));
 
 } // namespace evcollect
 
