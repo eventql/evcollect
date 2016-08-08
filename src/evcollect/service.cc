@@ -39,14 +39,70 @@ std::string mergeEvents(const std::string& base, const std::string& overlay) {
   return overlay;
 }
 
-} // namespace
+struct EventSourceBinding {
+  SourcePlugin* plugin;
+  void* userdata;
+};
 
-Service::Service(
+struct EventBinding {
+  std::string event_name;
+  uint64_t interval_micros;
+  std::vector<EventSourceBinding> sources;
+  uint64_t next_tick;
+};
+
+struct TargetBinding {
+  OutputPlugin* plugin;
+  void* userdata;
+};
+
+class ServiceImpl : public Service {
+public:
+
+  ServiceImpl(
+      const std::string& spool_dir,
+      const std::string& plugin_dir);
+
+  ~ServiceImpl() override;
+
+  ReturnCode addEvent(const EventBindingConfig* event_binding) override;
+  ReturnCode addTarget(const TargetBindingConfig* target_cfg) override;
+
+  ReturnCode loadPlugin(const std::string& plugin) override;
+  ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) override;
+
+  ReturnCode run() override;
+  void kill() override;
+
+protected:
+
+  ReturnCode processEvent(EventBinding* binding);
+
+  ReturnCode emitEvent(
+      EventBinding* binding,
+      uint64_t time,
+      const std::string& event_data);
+
+  ReturnCode deliverEvent(const EventData& evdata);
+
+  std::string spool_dir_;
+  std::string plugin_dir_;
+  PluginMap plugin_map_;
+  std::vector<std::unique_ptr<EventBinding>> event_bindings_;
+  std::vector<std::unique_ptr<TargetBinding>> targets_;
+  std::multiset<
+      EventBinding*,
+      std::function<bool (EventBinding*, EventBinding*)>> queue_;
+  int listen_fd_;
+  int wakeup_pipe_[2];
+};
+
+ServiceImpl::ServiceImpl(
     const std::string& spool_dir,
     const std::string& plugin_dir) :
     spool_dir_(spool_dir),
     plugin_dir_(plugin_dir),
-    plugin_map_(this),
+    plugin_map_(spool_dir, plugin_dir),
     queue_([] (EventBinding* a, EventBinding* b) {
       return a->next_tick < b->next_tick;
     }),
@@ -59,7 +115,7 @@ Service::Service(
   }
 }
 
-Service::~Service() {
+ServiceImpl::~ServiceImpl() {
   for (auto& binding : event_bindings_) {
     for (auto& source : binding->sources) {
       source.plugin->pluginDetach(source.userdata);
@@ -74,7 +130,7 @@ Service::~Service() {
   close(wakeup_pipe_[1]);
 }
 
-ReturnCode Service::addEvent(const EventBindingConfig* binding) {
+ReturnCode ServiceImpl::addEvent(const EventBindingConfig* binding) {
   std::unique_ptr<EventBinding> ev_binding(new EventBinding());
   ev_binding->event_name = binding->event_name;
   ev_binding->interval_micros = binding->interval_micros;
@@ -110,7 +166,7 @@ ReturnCode Service::addEvent(const EventBindingConfig* binding) {
   return ReturnCode::success();
 }
 
-ReturnCode Service::addTarget(const TargetBindingConfig* binding) {
+ReturnCode ServiceImpl::addTarget(const TargetBindingConfig* binding) {
   std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
 
   {
@@ -137,7 +193,7 @@ ReturnCode Service::addTarget(const TargetBindingConfig* binding) {
   return ReturnCode::success();
 }
 
-ReturnCode Service::loadPlugin(const std::string& plugin) {
+ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
   PluginContext plugin_ctx;
   plugin_ctx.plugin_map = &plugin_map_;
   auto rc = plugin_map_.loadPlugin(plugin, &plugin_ctx);
@@ -153,7 +209,7 @@ ReturnCode Service::loadPlugin(const std::string& plugin) {
   }
 }
 
-ReturnCode Service::emitEvent(
+ReturnCode ServiceImpl::emitEvent(
     EventBinding* binding,
     uint64_t time,
     const std::string& event_data) {
@@ -166,7 +222,7 @@ ReturnCode Service::emitEvent(
   return deliverEvent(evdata);
 }
 
-ReturnCode Service::deliverEvent(const EventData& evdata) {
+ReturnCode ServiceImpl::deliverEvent(const EventData& evdata) {
   auto rc_aggr = ReturnCode::success();
   for (const auto& t : targets_) {
     auto rc = t->plugin->pluginEmitEvent(t->userdata, evdata);
@@ -178,7 +234,7 @@ ReturnCode Service::deliverEvent(const EventData& evdata) {
   return rc_aggr;
 }
 
-ReturnCode Service::run() {
+ReturnCode ServiceImpl::run() {
   if (queue_.size() == 0) {
     return ReturnCode::success();
   }
@@ -246,7 +302,7 @@ ReturnCode Service::run() {
   }
 }
 
-ReturnCode Service::processEvent(EventBinding* binding) {
+ReturnCode ServiceImpl::processEvent(EventBinding* binding) {
   if (binding->sources.empty()) {
     return ReturnCode::success();
   }
@@ -293,10 +349,12 @@ ReturnCode Service::processEvent(EventBinding* binding) {
   return ReturnCode::success();
 }
 
-void Service::kill() {
+void ServiceImpl::kill() {
   char data = 0;
   int rc = write(wakeup_pipe_[1], &data, 1);
   (void) rc;
 }
+
+} // namespace
 
 } // namespace evcollect

@@ -31,68 +31,25 @@
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
-class SourcePlugin;
-class OutputPlugin;
-
 class Service {
 public:
 
-  Service(
+  static std::unique_ptr<Service> createService(
       const std::string& spool_dir,
       const std::string& plugin_dir);
 
-  ~Service();
+  virtual ~Service() = default;
 
-  ReturnCode addEvent(const EventBindingConfig* event_binding);
-  ReturnCode addTarget(const TargetBindingConfig* target_cfg);
+  virtual ReturnCode addEvent(const EventBindingConfig* event_binding) = 0;
+  virtual ReturnCode addTarget(const TargetBindingConfig* target_cfg) = 0;
 
-  ReturnCode loadPlugin(const std::string& plugin);
-  ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx));
+  virtual ReturnCode loadPlugin(const std::string& plugin) = 0;
+  virtual ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) = 0;
 
-  const std::string& getSpoolDir() const;
-  const std::string& getPluginDir() const;
+  virtual ReturnCode run() = 0;
+  virtual void kill() = 0;
 
-  ReturnCode run();
-  void kill();
-
-protected:
-
-  struct EventSourceBinding {
-    SourcePlugin* plugin;
-    void* userdata;
-  };
-
-  struct EventBinding {
-    std::string event_name;
-    uint64_t interval_micros;
-    std::vector<EventSourceBinding> sources;
-    uint64_t next_tick;
-  };
-
-  struct TargetBinding {
-    OutputPlugin* plugin;
-    void* userdata;
-  };
-
-  ReturnCode processEvent(EventBinding* binding);
-
-  ReturnCode emitEvent(
-      EventBinding* binding,
-      uint64_t time,
-      const std::string& event_data);
-
-  ReturnCode deliverEvent(const EventData& evdata);
-
-  std::string spool_dir_;
-  std::string plugin_dir_;
-  PluginMap plugin_map_;
-  std::vector<std::unique_ptr<EventBinding>> event_bindings_;
-  std::vector<std::unique_ptr<TargetBinding>> targets_;
-  std::multiset<
-      EventBinding*,
-      std::function<bool (EventBinding*, EventBinding*)>> queue_;
-  int listen_fd_;
-  int wakeup_pipe_[2];
 };
 
 } // namespace evcollect
+

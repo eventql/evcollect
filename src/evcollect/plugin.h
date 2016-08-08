@@ -181,7 +181,10 @@ class Service;
 class PluginMap {
 public:
 
-  PluginMap(const Service* service);
+  PluginMap(
+      const std::string& spool_dir,
+      const std::string& plugin_dir);
+
   ~PluginMap();
 
   ReturnCode loadPlugin(
@@ -204,7 +207,6 @@ public:
       const std::string& plugin_name,
       OutputPlugin** plugin) const;
 
-
 protected:
 
   struct SourcePluginBinding {
@@ -217,7 +219,8 @@ protected:
     bool plugin_initialized;
   };
 
-  const Service* service_;
+  std::string spool_dir_;
+  std::string plugin_dir_;
   mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
   mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
 };

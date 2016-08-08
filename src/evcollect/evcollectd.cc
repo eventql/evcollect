@@ -43,7 +43,7 @@ using namespace evcollect;
 void shutdown(int);
 ReturnCode daemonize();
 
-static Service* service;
+static std::unique_ptr<Service> service;
 
 int main(int argc, const char** argv) {
   signal(SIGTERM, shutdown);
@@ -221,9 +221,7 @@ int main(int argc, const char** argv) {
 
   /* setup service */
   auto rc = ReturnCode::success();
-  service = new Service(
-      conf.spool_dir,
-      conf.plugin_dir);
+  service = Service::createService(conf.spool_dir, conf.plugin_dir);
 
   for (const auto& plugin : conf.load_plugins) {
     if (!rc.isSuccess()) {
@@ -306,7 +304,7 @@ int main(int argc, const char** argv) {
   signal(SIGTERM, SIG_IGN);
   signal(SIGINT, SIG_IGN);
   signal(SIGHUP, SIG_IGN);
-  delete service;
+  service.reset(nullptr);
 
   /* unlock pidfile */
   if (pidfile_fd > 0) {
