@@ -477,6 +477,10 @@ bool ConfigParser::eof() const {
   return lexer_->eof();
 }
 
+ReturnCode ConfigParser::consumeToken(ConfigToken expected) {
+  return ReturnCode::success();
+}
+
 // Config          ::= PluginDecl* ( EventDecl | OutputDecl )*
 ReturnCode ConfigParser::goal() {
   while (currentToken() == ConfigToken::Plugin) {
