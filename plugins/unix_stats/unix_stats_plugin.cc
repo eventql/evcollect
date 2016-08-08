@@ -22,12 +22,12 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
+#include <string>
 #include <unistd.h>
-#include <string.h>
 #include <stdio.h>
 #include <sys/statvfs.h>
+#include <evcollect/evcollect.h>
 #include <evcollect/util/stringutil.h>
-#include <evcollect/util/return_code.h>
 
 #ifdef linux
 #include <mntent.h>
@@ -40,18 +40,57 @@
 namespace evcollect {
 namespace plugin_unix_stats {
 
-ReturnCode UnixStatsPlugin::pluginGetNextEvent(
+struct MountInfo {
+  std::string device;
+  std::string mount_point;
+};
+
+static std::vector<MountInfo> getMountInfo() {
+std::vector<MountInfo> mount_info;
+#ifdef linux
+
+  auto file = setmentent("/etc/fstab", "r");
+  while (auto mntent = getmntent(file)) {
+    printf("filesystemt: %s, mounted on: %s", mntent.mnt_fsname, mntent.mnt_dir);
+    MountInfo mn_info = {
+      .device = mntent.mnt_fsname,
+      .mount_point = mntent.mnt_dir
+    };
+
+    mount_info.emplace_back(mn_info);
+  }
+
+#elif __APPLE__
+
+  struct statfs *mntbuf;
+  auto mntsize = getmntinfo(&mntbuf, MNT_NOWAIT);
+  for (auto i = 0; i < mntsize; ++i) {
+    MountInfo mn_info = {
+      .device = mntbuf[i].f_mntfromname,
+      .mount_point = mntbuf[i].f_mntonname
+    };
+
+    mount_info.emplace_back(mn_info);
+  }
+
+#endif
+
+  return mount_info;
+}
+
+bool getEvent(
+    evcollect_ctx_t* ctx,
     void* userdata,
-    std::string* event_json) {
+    evcollect_event_t* ev) {
   std::string hostname;
   std::string hostname_fqdn;
 
-  event_json->append("([");
+  std::string evdata = "([";
 
   auto mount_info = getMountInfo();
   for (size_t i = 0; i < mount_info.size(); ++i) {
     if (i > 0) {
-      event_json->append(",");
+      evdata.append(",");
     }
 
     struct statvfs buf;
@@ -66,7 +105,7 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
     auto ifree = buf.f_favail;
     auto iused = buf.f_files - ifree;
 
-    event_json->append(StringUtil::format(
+    evdata.append(StringUtil::format(
         R"({ 
           "filesystem": "$0",
           "total": $1,
@@ -87,49 +126,21 @@ ReturnCode UnixStatsPlugin::pluginGetNextEvent(
         StringUtil::jsonEscape(mount_info[i].mount_point)));
   }
 
-  event_json->append("])");
+  evdata.append("])");
 
-  return ReturnCode::success();
+  evcollect_event_setdata(ev, evdata.data(), evdata.size());
+  return true;
 }
 
-bool UnixStatsPlugin::pluginHasPendingEvent(
-    void* userdata) {
-  return false;
-}
-
-std::vector<UnixStatsPlugin::MountInfo> UnixStatsPlugin::getMountInfo() {
-std::vector<UnixStatsPlugin::MountInfo> mount_info;
-#ifdef linux
-
-  auto file = setmentent("/etc/fstab", "r");
-  while (auto mntent = getmntent(file)) {
-    printf("filesystemt: %s, mounted on: %s", mntent.mnt_fsname, mntent.mnt_dir);
-    UnixStatsPlugin::MountInfo mn_info = {
-      .device = mntent.mnt_fsname,
-      .mount_point = mntent.mnt_dir
-    };
-
-    mount_info.emplace_back(mn_info);
-  }
-
-#elif __APPLE__
-
-  struct statfs *mntbuf;
-  auto mntsize = getmntinfo(&mntbuf, MNT_NOWAIT);
-  for (size_t i = 0; i < mntsize; ++i) {
-    UnixStatsPlugin::MountInfo mn_info = {
-      .device = mntbuf[i].f_mntfromname,
-      .mount_point = mntbuf[i].f_mntonname
-    };
-
-    mount_info.emplace_back(mn_info);
-  }
-
-#endif
-
-  return mount_info;
-}
 
 } // namespace plugin_unix_stats
 } // namespace evcollect
 
+bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+  evcollect_source_plugin_register(
+      ctx,
+      "unix_stats",
+      &evcollect::plugin_unix_stats::getEvent);
+
+  return true;
+}
