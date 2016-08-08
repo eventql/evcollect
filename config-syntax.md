@@ -2,18 +2,19 @@
 
 ## Syntactical Grammar
 ```
-Config          ::= PluginDecl* ( EventDecl | OutputDecl )*
+Config            ::= PluginDecl* ( EventDecl | OutputDecl )*
 
-PluginDecl      ::= "plugin" PATH NL
+PluginDecl        ::= "plugin" PATH NL
 
-EventDecl       ::= "event" NAME PropertyList NL EventSourceDecl*
-EventSourceDecl ::= "source" NAME VALUE PropertyList NL
+EventDecl         ::= "event" NAME NamedPropertyList NL EventSourceDecl*
+EventSourceDecl   ::= "source" NAME VALUE PropertyList NL
 
-OutputDecl      ::= "output" NAME "plugin" PATH NL OutputProperty*
-OutputProperty  ::= OutputKey PropertyList NL
-OutputKey       ::= NAME
+OutputDecl        ::= "output" NAME "plugin" PATH NL OutputProperty*
+OutputProperty    ::= OutputKey PropertyList NL
+OutputKey         ::= NAME
 
-PropertyList    ::= (NAME VALUE)*
+NamedPropertyList ::= (NAME VALUE)*
+PropertyList      ::= VALUE*
 ```
 
 ### Lexical Grammar
