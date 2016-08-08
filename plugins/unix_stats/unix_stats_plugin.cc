@@ -51,7 +51,7 @@ static std::vector<MountInfo> getMountInfo() {
 std::vector<MountInfo> mount_info;
 #ifdef __linux__
 
-  auto file = setmntent("/etc/mtab", "r");
+  auto file = setmntent(MOUNTED, "r");
   while (auto mntent = getmntent(file)) {
     MountInfo mn_info = {
       .device = mntent->mnt_fsname,
