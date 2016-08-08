@@ -34,7 +34,6 @@ extern "C" {
 
 typedef void evcollect_ctx_t;
 typedef void evcollect_plugin_cfg_t;
-typedef void evcollect_props_t;
 typedef void evcollect_event_t;
 
 void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
