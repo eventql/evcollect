@@ -493,7 +493,7 @@ bool pluginEmitEvent(
 } // namespace plugins_eventql
 } // namespace evcollect
 
-bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+EVCOLLECT_PLUGIN_INIT(eventql) {
   evcollect_output_plugin_register(
       ctx,
       "eventql",

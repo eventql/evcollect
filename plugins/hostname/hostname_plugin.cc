@@ -62,7 +62,7 @@ bool getEvent(
 } // namespace plugins_hostname
 } // namespace evcollect
 
-bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+EVCOLLECT_PLUGIN_INIT(hostname) {
   evcollect_source_plugin_register(
       ctx,
       "hostname",

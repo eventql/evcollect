@@ -135,8 +135,11 @@ void evcollect_output_plugin_register(
     evcollect_plugin_init_fn init_fn = nullptr,
     evcollect_plugin_free_fn free_fn = nullptr);
 
-__attribute__((visibility("default"))) bool __evcollect_plugin_init(
+bool __evcollect_plugin_init(
     evcollect_ctx_t* ctx);
+
+#define EVCOLLECT_PLUGIN_INIT(N) \
+    extern "C" __attribute__((visibility("default"))) bool plugin_ ## N ## _init(evcollect_ctx_t* ctx)
 
 } // extern "C"
 
