@@ -236,6 +236,7 @@ bool getUptimeEvent(
       uptime_seconds));
 
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
+  printf("event: %s", evdata.c_str());
   return true;
 }
 
@@ -249,10 +250,6 @@ EVCOLLECT_PLUGIN_INIT(unix_stats) {
       "unix_stats",
       &evcollect::plugin_unix_stats::getEvent);
 
-  return true;
-}
-
-EVCOLLECT_PLUGIN_INIT(unix_uptime) {
   evcollect_source_plugin_register(
       ctx,
       "unix_uptime",
@@ -260,4 +257,3 @@ EVCOLLECT_PLUGIN_INIT(unix_uptime) {
 
   return true;
 }
-
