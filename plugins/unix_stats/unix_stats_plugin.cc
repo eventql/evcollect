@@ -89,10 +89,11 @@ bool getEvent(
     evcollect_event_t* ev) {
   std::string hostname;
   std::string hostname_fqdn;
+  std::string evdata;
 
-  std::string evdata = R"({"disk_stats": [)";
-
+  //disk_stats
   {
+    evdata.append(R"({"disk_stats": [)");
     auto mount_info = getMountInfo();
     for (size_t i = 0; i < mount_info.size(); ++i) {
       if (i > 0) {
@@ -135,36 +136,42 @@ bool getEvent(
     evdata.append("]}");
   }
 
-  evdata.append(R"(,{"loadavg": )");
+  //loadavg stats
+  {
+
+    evdata.append(R"(,{"loadavg": )");
 
 
 #if __linux__
-  //std::ifstream f("/proc/loadavg", std::ifstream::in);
-  //while (f.good()) {
-  //  auto c = f.get();
-  //}
+    //std::ifstream f("/proc/loadavg", std::ifstream::in);
+    //while (f.good()) {
+    //  auto c = f.get();
+    //}
 #elif __APPLE__
-  struct loadavg loadinfo;
-  size_t size = sizeof(loadinfo);
+    struct loadavg loadinfo;
+    size_t size = sizeof(loadinfo);
 
-  if (sysctlbyname("vm.loadavg", &loadinfo, &size, NULL, 0) == -1) {
-    //logerror strerror(errno));
-    return false;
-  }
-
-  for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
-    if (i > 0) {
-      evdata.append(",");
+    if (sysctlbyname("vm.loadavg", &loadinfo, &size, NULL, 0) == -1) {
+      evcollect_seterror(
+          ctx,
+          StringUtil::format("sysctlbyname failed: $0", strerror(errno)).c_str());
+      return false;
     }
 
-    evdata.append(StringUtil::format(
-        "{$0: $1}",
-        i,
-        (double) loadinfo.ldavg[i] / loadinfo.fscale));
-  }
+    for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
+      if (i > 0) {
+        evdata.append(",");
+      }
+
+      evdata.append(StringUtil::format(
+          "{$0: $1}",
+          i,
+          (double) loadinfo.ldavg[i] / loadinfo.fscale));
+    }
 #endif
 
-  evdata.append("}");
+    evdata.append("}");
+  }
 
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
   return true;
