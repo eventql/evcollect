@@ -187,7 +187,7 @@ bool getEvent(
 } // namespace plugin_unix_stats
 } // namespace evcollect
 
-bool __evcollect_plugin_init(evcollect_ctx_t* ctx) {
+EVCOLLECT_PLUGIN_INIT(unix_stats) {
   evcollect_source_plugin_register(
       ctx,
       "unix_stats",
