@@ -24,7 +24,6 @@
  */
 #include <string>
 #include <unistd.h>
-#include <ctime>
 #include <stdio.h>
 #include <sys/statvfs.h>
 #include <evcollect/evcollect.h>
@@ -224,9 +223,8 @@ bool getUptimeEvent(
 
 #endif
 
-  time_t now;
-  time(&now);
-  auto uptime_seconds = now - uptime;
+  UnixTime now;
+  auto uptime_seconds = (now.unixMicros() / kMicrosPerSecond) - uptime;
 
   evdata.append(StringUtil::format(
       R"({"days": $0, "hours": $1, "minutes": $2, "seconds": $3})",
