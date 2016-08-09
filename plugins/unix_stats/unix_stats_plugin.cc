@@ -31,8 +31,6 @@
 
 #if __linux__
 #include <mntent.h>
-#include <iostream>
-#include <fstream>
 #endif
 
 #if __APPLE__
@@ -145,13 +143,22 @@ bool getEvent(
 
 
 #if __linux__
-    char cur[4];
-    std::ifstream f;
-    f.open("/proc/loadavg", std::ifstream::in);
-    f.get(cur, sizeof(cur), ' ');
-    printf("found %s", cur);
-    while (f.good()) {
+    const size_t nelem = 3;
+    double loadavg[nelem];
+    if (getloadavg(loadavg, 3) == -1) {
+      evcollect_seterror(ctx, "getloadavg failed");
+      return false;
+    }
 
+    for (size_t i = 0; i < nelem; ++i) {
+      if (i > 0) {
+        evdata.append(",");
+      }
+
+      evdata.append(StringUtil::format(
+          "{$0: $1}",
+          i,
+          loadavg[i]));
     }
 #elif __APPLE__
     struct loadavg loadinfo;
