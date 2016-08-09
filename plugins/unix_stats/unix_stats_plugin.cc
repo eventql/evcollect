@@ -31,6 +31,8 @@
 
 #if __linux__
 #include <mntent.h>
+#include <iostream>
+#include <fstream>
 #endif
 
 #if __APPLE__
@@ -143,10 +145,14 @@ bool getEvent(
 
 
 #if __linux__
-    //std::ifstream f("/proc/loadavg", std::ifstream::in);
-    //while (f.good()) {
-    //  auto c = f.get();
-    //}
+    char cur[4];
+    std::ifstream f;
+    f.open("/proc/loadavg", std::ifstream::in);
+    f.get(cur, sizeof(cur), ' ');
+    printf("found %s", cur);
+    while (f.good()) {
+
+    }
 #elif __APPLE__
     struct loadavg loadinfo;
     size_t size = sizeof(loadinfo);
