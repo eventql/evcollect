@@ -219,22 +219,18 @@ bool getUptimeEvent(
       return false;
     }
 
-    auto uptime = t.tv_sec;
-
+    UnixTime now;
+    auto uptime = (now.unixMicros() / kMicrosPerSecond) - t.tv_sec;
 #endif
-
-  UnixTime now;
-  auto uptime_seconds = (now.unixMicros() / kMicrosPerSecond) - uptime;
 
   evdata.append(StringUtil::format(
       R"({"days": $0, "hours": $1, "minutes": $2, "seconds": $3})",
-      uptime_seconds / kSecondsPerDay,
-      uptime_seconds / kSecondsPerHour,
-      uptime_seconds / kSecondsPerMinute,
-      uptime_seconds));
+      uptime / kSecondsPerDay,
+      uptime / kSecondsPerHour,
+      uptime / kSecondsPerMinute,
+      uptime));
 
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
-  printf("event: %s", evdata.c_str());
   return true;
 }
 
