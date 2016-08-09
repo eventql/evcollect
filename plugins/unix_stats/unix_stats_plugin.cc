@@ -24,10 +24,12 @@
  */
 #include <string>
 #include <unistd.h>
+#include <ctime>
 #include <stdio.h>
 #include <sys/statvfs.h>
 #include <evcollect/evcollect.h>
 #include <evcollect/util/stringutil.h>
+#include <evcollect/util/time.h>
 
 #if __linux__
 #include <mntent.h>
@@ -88,8 +90,6 @@ bool getEvent(
     evcollect_ctx_t* ctx,
     void* userdata,
     evcollect_event_t* ev) {
-  std::string hostname;
-  std::string hostname_fqdn;
   std::string evdata;
 
   //disk_stats
@@ -195,6 +195,50 @@ bool getEvent(
   return true;
 }
 
+bool getUptimeEvent(
+    evcollect_ctx_t* ctx,
+    void* userdata,
+    evcollect_event_t* ev) {
+  std::string evdata;
+#if __linux__
+    struct sysinfo info;
+    if (sysinfo(&info) == -1) {
+      evcollect_seterror(ctx, "sysinfo failed");
+      return false;
+    }
+
+    auto uptime = info.uptime;
+
+#elif __APPLE__
+    struct timeval t;
+    size_t size = sizeof(t);
+
+    if (sysctlbyname("kern.boottime", &t, &size, NULL, 0) == -1) {
+      evcollect_seterror(
+          ctx,
+          StringUtil::format("sysctlbyname failed: $0", strerror(errno)).c_str());
+      return false;
+    }
+
+    auto uptime = t.tv_sec;
+
+#endif
+
+  time_t now;
+  time(&now);
+  auto uptime_seconds = now - uptime;
+
+  evdata.append(StringUtil::format(
+      R"({"days": $0, "hours": $1, "minutes": $2, "seconds": $3})",
+      uptime_seconds / kSecondsPerDay,
+      uptime_seconds / kSecondsPerHour,
+      uptime_seconds / kSecondsPerMinute,
+      uptime_seconds));
+
+  evcollect_event_setdata(ev, evdata.data(), evdata.size());
+  return true;
+}
+
 
 } // namespace plugin_unix_stats
 } // namespace evcollect
@@ -207,3 +251,13 @@ EVCOLLECT_PLUGIN_INIT(unix_stats) {
 
   return true;
 }
+
+EVCOLLECT_PLUGIN_INIT(unix_uptime) {
+  evcollect_source_plugin_register(
+      ctx,
+      "unix_uptime",
+      &evcollect::plugin_unix_stats::getUptimeEvent);
+
+  return true;
+}
+

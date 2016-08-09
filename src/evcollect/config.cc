@@ -63,16 +63,26 @@ ReturnCode loadConfig(
     b.event_name = "sys.alive";
     b.interval_micros = 1000000;
 
-    // XXX: source plugin hostname
-    b.sources.emplace_back();
-    auto& s = b.sources.back();
-    s.plugin_name = "hostname";
+    {
+      // XXX: source plugin hostname
+      b.sources.emplace_back();
+      auto& s = b.sources.back();
+      s.plugin_name = "hostname";
+    }
 
+    {
+      // XXX: source plugin unix_stats
+      b.sources.emplace_back();
+      auto& s = b.sources.back();
+      s.plugin_name = "unix_stats";
+    }
 
-    // XXX: source plugin unix_stats
-    b.sources.emplace_back();
-    auto& p = b.sources.back();
-    p.plugin_name = "unix_stats";
+    {
+      // XXX: source plugin unix_stats
+      b.sources.emplace_back();
+      auto& s = b.sources.back();
+      s.plugin_name = "unix_uptime";
+    }
   }
 
   {
