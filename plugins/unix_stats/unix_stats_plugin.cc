@@ -31,6 +31,7 @@
 
 #if __linux__
 #include <mntent.h>
+#include <sys/sysinfo.h>
 #endif
 
 #if __APPLE__
@@ -143,14 +144,13 @@ bool getEvent(
 
 
 #if __linux__
-    const size_t nelem = 3;
-    double loadavg[nelem];
-    if (getloadavg(loadavg, 3) == -1) {
-      evcollect_seterror(ctx, "getloadavg failed");
+    struct sysinfo info;
+    if (sysinfo(&info) == -1) {
+      evcollect_seterror(ctx, "sysinfo failed");
       return false;
     }
 
-    for (size_t i = 0; i < nelem; ++i) {
+    for (size_t i = 0; i < sizeof(info.loads) / sizeof(info.loads[0]); ++i) {
       if (i > 0) {
         evdata.append(",");
       }
@@ -158,8 +158,13 @@ bool getEvent(
       evdata.append(StringUtil::format(
           "{$0: $1}",
           i,
-          loadavg[i]));
+          info.loads[i]));
     }
+
+    evdata.append(StringUtil::format(R"(,{"uptime": $0})", info.uptime));
+    evdata.append(StringUtil::format(R"(,{"procs": $0})", info.procs));
+    evdata.append(StringUtil::format(R"(,{"freeram": $0})", info.freeram));
+    evdata.append(StringUtil::format(R"(,{"freeswap": $0})", info.freeswap));
 #elif __APPLE__
     struct loadavg loadinfo;
     size_t size = sizeof(loadinfo);
