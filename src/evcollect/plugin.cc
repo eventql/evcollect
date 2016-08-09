@@ -22,8 +22,11 @@
  * code of your own applications
  */
 #include <dlfcn.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <evcollect/plugin.h>
-#include <evcollect/plugin_map.h>
+#include <evcollect/service.h>
 #include <evcollect/util/logging.h>
 
 namespace evcollect {
@@ -197,7 +200,10 @@ ReturnCode DynamicOutputPlugin::pluginEmitEvent(
   }
 }
 
-ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
+ReturnCode loadPlugin(
+    PluginContext* plugin_ctx,
+    std::string plugin_name,
+    std::string plugin_path) {
   logInfo("Loading plugin: $0", plugin_path);
   void* dl = dlopen(plugin_path.c_str(), RTLD_NOW);
   if (!dl) {
@@ -208,26 +214,124 @@ ReturnCode loadPlugin(PluginContext* plugin_ctx, std::string plugin_path) {
         dlerror());
   }
 
-  auto dl_init = dlsym(dl, "__evcollect_plugin_init");
+  auto plugin_init_fn = StringUtil::format("plugin_$0_init", plugin_name);
+  auto dl_init = dlsym(dl, plugin_init_fn.c_str());
   if (!dl_init) {
     dlclose(dl);
     return ReturnCode::error(
         "EIO",
-        "error while loading plugin: %s: %s [evcollect_plugin_init() not found]",
+        "error while loading plugin: %s: %s [symbol '%s' not found]",
         plugin_path.c_str(),
-        dlerror());
+        dlerror(),
+        plugin_init_fn.c_str());
   }
 
-  int rc = ((bool (*)(evcollect_ctx_t*)) (dl_init))(plugin_ctx);
-  if (!rc) {
+  auto rc = loadPlugin(plugin_ctx, (bool (*)(evcollect_ctx_t*)) dl_init);
+  if (!rc.isSuccess()) {
     dlclose(dl);
-    return ReturnCode::error(
-        "EIO",
-        "error while loading plugin: %s: %s",
-        plugin_path.c_str(),
-        plugin_ctx->error.c_str());
   }
 
+  return rc;
+}
+
+ReturnCode loadPlugin(
+    PluginContext* plugin_ctx,
+    bool (*init_fn)(evcollect_ctx_t* ctx)) {
+  int rc = init_fn(plugin_ctx);
+  if (rc) {
+    return ReturnCode::success();
+  } else {
+    return ReturnCode::error("EPLUGIN", plugin_ctx->error);
+  }
+}
+
+PluginMap::PluginMap(
+    const std::string& spool_dir,
+    const std::string& plugin_dir) :
+    spool_dir_(spool_dir),
+    plugin_dir_(plugin_dir) {}
+
+PluginMap::~PluginMap() {
+  for (auto& plugin : source_plugins_) {
+    if (!plugin.second.plugin_initialized) {
+      continue;
+    }
+
+    plugin.second.plugin->pluginFree();
+  }
+}
+
+void PluginMap::registerSourcePlugin(
+    const std::string& plugin_name,
+    std::unique_ptr<SourcePlugin> plugin) {
+  SourcePluginBinding plugin_binding;
+  plugin_binding.plugin = std::move(plugin);
+  plugin_binding.plugin_initialized = false;
+  source_plugins_.emplace(plugin_name, std::move(plugin_binding));
+}
+
+ReturnCode PluginMap::getSourcePlugin(
+    const std::string& plugin_name,
+    SourcePlugin** plugin) const {
+  auto iter = source_plugins_.find(plugin_name);
+  if (iter == source_plugins_.end()) {
+    return ReturnCode::error(
+        "PLUGIN_NOT_FOUND",
+        "plugin not found: %s",
+        plugin_name.c_str());
+  }
+
+  auto& plugin_iter = iter->second;
+  if (!plugin_iter.plugin_initialized) {
+    PluginConfig pc;
+    pc.spool_dir = spool_dir_;
+
+    auto rc = plugin_iter.plugin->pluginInit(pc);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+
+    plugin_iter.plugin_initialized = true;
+  }
+
+  *plugin = plugin_iter.plugin.get();
+  return ReturnCode::success();
+}
+
+void PluginMap::registerOutputPlugin(
+    const std::string& plugin_name,
+    std::unique_ptr<OutputPlugin> plugin) {
+  OutputPluginBinding plugin_binding;
+  plugin_binding.plugin = std::move(plugin);
+  plugin_binding.plugin_initialized = false;
+  output_plugins_.emplace(plugin_name, std::move(plugin_binding));
+}
+
+ReturnCode PluginMap::getOutputPlugin(
+    const std::string& plugin_name,
+    OutputPlugin** plugin) const {
+  auto iter = output_plugins_.find(plugin_name);
+  if (iter == output_plugins_.end()) {
+    return ReturnCode::error(
+        "PLUGIN_NOT_FOUND",
+        "output plugin not found: %s",
+        plugin_name.c_str());
+  }
+
+  auto& plugin_iter = iter->second;
+  if (!plugin_iter.plugin_initialized) {
+    PluginConfig pc;
+    pc.spool_dir = spool_dir_;
+
+    auto rc = plugin_iter.plugin->pluginInit(pc);
+    if (!rc.isSuccess()) {
+      return rc;
+    }
+
+    plugin_iter.plugin_initialized = true;
+  }
+
+  *plugin = plugin_iter.plugin.get();
   return ReturnCode::success();
 }
 

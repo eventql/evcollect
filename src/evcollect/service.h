@@ -23,58 +23,33 @@
  */
 #pragma once
 #include <string>
-#include <unordered_map>
-#include <memory>
+#include <set>
+#include <mutex>
+#include <condition_variable>
+#include <evcollect/evcollect.h>
+#include <evcollect/plugin.h>
 #include <evcollect/util/return_code.h>
 
 namespace evcollect {
-class SourcePlugin;
-class OutputPlugin;
-struct ProcessConfig;
-struct PluginContext;
-
-class PluginMap {
+class Service {
 public:
 
-  PluginMap(const ProcessConfig* config);
-  ~PluginMap();
+  static std::unique_ptr<Service> createService(
+      const std::string& spool_dir,
+      const std::string& plugin_dir);
 
-  ReturnCode loadPlugin(
-      const std::string& plugin_name,
-      PluginContext* ctx) const;
+  virtual ~Service() = default;
 
-  void registerSourcePlugin(
-      const std::string& plugin_name,
-      std::unique_ptr<SourcePlugin> plugin);
+  virtual ReturnCode addEvent(const EventConfig* event_binding) = 0;
+  virtual ReturnCode addTarget(const TargetConfig* target_cfg) = 0;
 
-  ReturnCode getSourcePlugin(
-      const std::string& plugin_name,
-      SourcePlugin** plugin) const;
+  virtual ReturnCode loadPlugin(const std::string& plugin) = 0;
+  virtual ReturnCode loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) = 0;
 
-  void registerOutputPlugin(
-      const std::string& plugin_name,
-      std::unique_ptr<OutputPlugin> plugin);
+  virtual ReturnCode run() = 0;
+  virtual void kill() = 0;
 
-  ReturnCode getOutputPlugin(
-      const std::string& plugin_name,
-      OutputPlugin** plugin) const;
-
-
-protected:
-
-  struct SourcePluginBinding {
-    std::unique_ptr<SourcePlugin> plugin;
-    bool plugin_initialized;
-  };
-
-  struct OutputPluginBinding {
-    std::unique_ptr<OutputPlugin> plugin;
-    bool plugin_initialized;
-  };
-
-  const ProcessConfig* config_;
-  mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
-  mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
 };
 
 } // namespace evcollect
+

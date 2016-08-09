@@ -23,6 +23,8 @@
  */
 #pragma once
 #include <string>
+#include <unordered_map>
+#include <mutex>
 #include <evcollect/evcollect.h>
 #include <evcollect/config.h>
 #include <evcollect/util/return_code.h>
@@ -174,9 +176,59 @@ protected:
   evcollect_plugin_free_fn free_fn_;
 };
 
+class Service;
+
+class PluginMap {
+public:
+
+  PluginMap(
+      const std::string& spool_dir,
+      const std::string& plugin_dir);
+
+  ~PluginMap();
+
+  void registerSourcePlugin(
+      const std::string& plugin_name,
+      std::unique_ptr<SourcePlugin> plugin);
+
+  ReturnCode getSourcePlugin(
+      const std::string& plugin_name,
+      SourcePlugin** plugin) const;
+
+  void registerOutputPlugin(
+      const std::string& plugin_name,
+      std::unique_ptr<OutputPlugin> plugin);
+
+  ReturnCode getOutputPlugin(
+      const std::string& plugin_name,
+      OutputPlugin** plugin) const;
+
+protected:
+
+  struct SourcePluginBinding {
+    std::unique_ptr<SourcePlugin> plugin;
+    bool plugin_initialized;
+  };
+
+  struct OutputPluginBinding {
+    std::unique_ptr<OutputPlugin> plugin;
+    bool plugin_initialized;
+  };
+
+  std::string spool_dir_;
+  std::string plugin_dir_;
+  mutable std::unordered_map<std::string, SourcePluginBinding> source_plugins_;
+  mutable std::unordered_map<std::string, OutputPluginBinding> output_plugins_;
+};
+
 ReturnCode loadPlugin(
     PluginContext* ctx,
+    std::string plugin_name,
     std::string plugin_path);
+
+ReturnCode loadPlugin(
+    PluginContext* ctx,
+    bool (*init_fn)(evcollect_ctx_t* ctx));
 
 } // namespace evcollect
 

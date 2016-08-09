@@ -30,21 +30,17 @@
 #include <sys/resource.h>
 #include <sys/file.h>
 #include <curl/curl.h>
+#include <evcollect/evcollect.h>
+#include <evcollect/service.h>
 #include <evcollect/util/flagparser.h>
 #include <evcollect/util/logging.h>
-#include <evcollect/evcollect.h>
-#include <evcollect/plugin.h>
-#include <evcollect/plugin_map.h>
-#include <evcollect/dispatch.h>
-#include <evcollect/config.h>
-#include <evcollect/logfile.h>
 
 using namespace evcollect;
 
 void shutdown(int);
 ReturnCode daemonize();
 
-static Dispatch* dispatch;
+static std::unique_ptr<Service> service;
 
 int main(int argc, const char** argv) {
   signal(SIGTERM, shutdown);
@@ -220,88 +216,32 @@ int main(int argc, const char** argv) {
     conf.load_plugins.push_back(plugin_path);
   }
 
-  /* load plugins */
-  std::unique_ptr<PluginMap> plugin_map(new PluginMap(&conf));
-  LogfileSourcePlugin::registerPlugin(plugin_map.get());
+  /* setup service */
+  auto rc = ReturnCode::success();
+  service = Service::createService(conf.spool_dir, conf.plugin_dir);
 
-  PluginContext plugin_ctx;
-  plugin_ctx.plugin_map = plugin_map.get();
   for (const auto& plugin : conf.load_plugins) {
-    auto rc = plugin_map->loadPlugin(plugin, &plugin_ctx);
     if (!rc.isSuccess()) {
-      logFatal(
-          "error while loading plugin '$0': $1",
-          plugin,
-          rc.getMessage());
-
-      return 1;
+      break;
     }
+
+    rc = service->loadPlugin(plugin);
   }
 
-  /* initialize event bindings */
-  auto rc = ReturnCode::success();
-  std::vector<std::unique_ptr<EventBinding>> event_bindings;
   for (const auto& binding : conf.event_bindings) {
     if (!rc.isSuccess()) {
       break;
     }
 
-    std::unique_ptr<EventBinding> ev_binding(new EventBinding());
-    ev_binding->event_name = binding.event_name;
-    ev_binding->interval_micros = binding.interval_micros;
-
-    for (const auto& source : binding.sources) {
-      EventSourceBinding ev_source;
-      rc = plugin_map->getSourcePlugin(
-          source.plugin_name,
-          &ev_source.plugin);
-
-      if (!rc.isSuccess()) {
-        break;
-      }
-
-      rc = ev_source.plugin->pluginAttach(
-          source.properties,
-          &ev_source.userdata);
-
-      if (!rc.isSuccess()) {
-        break;
-      }
-
-      ev_binding->sources.emplace_back(ev_source);
-    }
-
-    if (rc.isSuccess()) {
-      event_bindings.emplace_back(std::move(ev_binding));
-    }
+    rc = service->addEvent(&binding);
   }
 
-  /* initialize target bindings */
-  std::vector<std::unique_ptr<TargetBinding>> target_bindings;
   for (const auto& binding : conf.target_bindings) {
     if (!rc.isSuccess()) {
       break;
     }
 
-    std::unique_ptr<TargetBinding> trgt_binding(new TargetBinding());
-
-    rc = plugin_map->getOutputPlugin(
-        binding.plugin_name,
-        &trgt_binding->plugin);
-
-    if (!rc.isSuccess()) {
-      break;
-    }
-
-    rc = trgt_binding->plugin->pluginAttach(
-        binding.properties,
-        &trgt_binding->userdata);
-
-    if (!rc.isSuccess()) {
-      break;
-    }
-
-    target_bindings.emplace_back(std::move(trgt_binding));
+    rc = service->addTarget(&binding);
   }
 
   /* daemonize */
@@ -346,18 +286,10 @@ int main(int argc, const char** argv) {
     }
   }
 
-  /* main dispatch loop */
+  /* main service loop */
   if (rc.isSuccess()) {
-    logInfo("Starting with $0 event bindings", event_bindings.size());
-    dispatch = new Dispatch();
-    for (const auto& binding : event_bindings) {
-      dispatch->addEventBinding(binding.get());
-    }
-    for (const auto& binding : target_bindings) {
-      dispatch->addTargetBinding(binding.get());
-    }
-
-    rc = dispatch->run();
+    logInfo("Starting...");
+    rc = service->run();
   }
 
   if (!rc.isSuccess()) {
@@ -365,20 +297,11 @@ int main(int argc, const char** argv) {
   }
 
   /* shutdown */
-  for (auto& binding : event_bindings) {
-    for (auto& source : binding->sources) {
-      source.plugin->pluginDetach(source.userdata);
-    }
-  }
-
-  for (auto& binding : target_bindings) {
-    binding->plugin->pluginDetach(binding->userdata);
-  }
-
   logInfo("Exiting...");
-
-  delete dispatch;
-  plugin_map.reset(nullptr);
+  signal(SIGTERM, SIG_IGN);
+  signal(SIGINT, SIG_IGN);
+  signal(SIGHUP, SIG_IGN);
+  service.reset(nullptr);
 
   /* unlock pidfile */
   if (pidfile_fd > 0) {
@@ -394,8 +317,8 @@ int main(int argc, const char** argv) {
 }
 
 void shutdown(int) {
-  if (dispatch) {
-    dispatch->kill();
+  if (service) {
+    service->kill();
   }
 }
 

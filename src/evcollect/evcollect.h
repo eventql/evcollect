@@ -25,25 +25,15 @@
 #include <string>
 #include <vector>
 
-#ifdef __cplusplus
-
-namespace evcollect {
-
-struct EventData {
-  uint64_t time;
-  std::string event_name;
-  std::string event_data;
-};
-
-} // namespace evcollect
-
-#endif
+/**
+ * This file contains the common public C and C++ API as well as the C plugin
+ * api
+ */
 
 extern "C" {
 
 typedef void evcollect_ctx_t;
 typedef void evcollect_plugin_cfg_t;
-typedef void evcollect_props_t;
 typedef void evcollect_event_t;
 
 void evcollect_seterror(evcollect_ctx_t* ctx, const char* error);
@@ -145,8 +135,52 @@ void evcollect_output_plugin_register(
     evcollect_plugin_init_fn init_fn = nullptr,
     evcollect_plugin_free_fn free_fn = nullptr);
 
-__attribute__((visibility("default"))) bool __evcollect_plugin_init(
+bool __evcollect_plugin_init(
     evcollect_ctx_t* ctx);
 
-}
+#define EVCOLLECT_PLUGIN_INIT(N) \
+    extern "C" __attribute__((visibility("default"))) bool plugin_ ## N ## _init(evcollect_ctx_t* ctx)
 
+} // extern "C"
+
+#ifdef __cplusplus
+
+namespace evcollect {
+
+struct EventData {
+  uint64_t time;
+  std::string event_name;
+  std::string event_data;
+};
+
+struct PropertyList {
+  std::vector<std::pair<std::string, std::vector<std::string>>> properties;
+  bool get(const std::string& key, std::string* out) const;
+  bool get(const std::string& key, const char** out) const;
+  bool getv(const std::string& key, size_t i, size_t j, const char** out) const;
+  size_t get(
+      const std::string& key,
+      std::vector<std::vector<std::string>>* out) const;
+};
+
+struct EventSourceConfig {
+  std::string plugin_name;
+  std::string plugin_value;
+  PropertyList properties;
+};
+
+struct EventConfig {
+  std::string event_name;
+  uint64_t interval_micros;
+  std::vector<EventSourceConfig> sources;
+};
+
+struct TargetConfig {
+  std::string plugin_name;
+  std::string plugin_value;
+  PropertyList properties;
+};
+
+} // namespace evcollect
+
+#endif
