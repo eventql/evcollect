@@ -85,111 +85,111 @@ std::vector<MountInfo> mount_info;
   return mount_info;
 }
 
-bool getEvent(
+bool getDiskUsageEvent(
     evcollect_ctx_t* ctx,
     void* userdata,
     evcollect_event_t* ev) {
   std::string evdata;
 
-  //disk_stats
-  {
-    evdata.append(R"({"disk_stats": [)");
-    auto mount_info = getMountInfo();
-    for (size_t i = 0; i < mount_info.size(); ++i) {
-      if (i > 0) {
-        evdata.append(",");
-      }
-
-      struct statvfs buf;
-      if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
-        continue;
-      }
-
-      auto total =  (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
-      auto available =  (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
-      auto used = total - available;
-      auto capacity = total > 0 ? used / total : 1;
-      auto ifree = buf.f_favail;
-      auto iused = buf.f_files - ifree;
-
-      evdata.append(StringUtil::format(
-          R"({ 
-            "filesystem": "$0",
-            "total": $1,
-            "used": $2,
-            "available": $3,
-            "capacity": $4,
-            "iused": $5,
-            "ifree": $6,
-            "mount_point": "$7"
-          })",
-          StringUtil::jsonEscape(mount_info[i].device),
-          total,
-          used,
-          available,
-          capacity,
-          iused,
-          ifree,
-          StringUtil::jsonEscape(mount_info[i].mount_point)));
+  evdata.append(R"({"disk_stats": [)");
+  auto mount_info = getMountInfo();
+  for (size_t i = 0; i < mount_info.size(); ++i) {
+    if (i > 0) {
+      evdata.append(",");
     }
 
-    evdata.append("]}");
+    struct statvfs buf;
+    if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
+      continue;
+    }
+
+    auto total =  (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto available =  (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto used = total - available;
+    auto capacity = total > 0 ? used / total : 1;
+    auto ifree = buf.f_favail;
+    auto iused = buf.f_files - ifree;
+
+    evdata.append(StringUtil::format(
+        R"({ 
+          "filesystem": "$0",
+          "total": $1,
+          "used": $2,
+          "available": $3,
+          "capacity": $4,
+          "iused": $5,
+          "ifree": $6,
+          "mount_point": "$7"
+        })",
+        StringUtil::jsonEscape(mount_info[i].device),
+        total,
+        used,
+        available,
+        capacity,
+        iused,
+        ifree,
+        StringUtil::jsonEscape(mount_info[i].mount_point)));
   }
 
-  //loadavg stats
-  {
+  evdata.append("]}");
+  evcollect_event_setdata(ev, evdata.data(), evdata.size());
+  return true;
+}
 
-    evdata.append(R"(,{"loadavg": )");
-
-
+bool getLoadAvgEvent(
+    evcollect_ctx_t* ctx,
+    void* userdata,
+    evcollect_event_t* ev) {
+  std::string evdata;
 #if __linux__
-    struct sysinfo info;
-    if (sysinfo(&info) == -1) {
-      evcollect_seterror(ctx, "sysinfo failed");
-      return false;
+  struct sysinfo info;
+  if (sysinfo(&info) == -1) {
+    evcollect_seterror(ctx, "sysinfo failed");
+    return false;
+  }
+
+  /* load average for the last 1, 5 and 15 minutes */
+  for (size_t i = 0; i < sizeof(info.loads) / sizeof(info.loads[0]); ++i) {
+    if (i > 0) {
+      evdata.append(",");
     }
 
-    for (size_t i = 0; i < sizeof(info.loads) / sizeof(info.loads[0]); ++i) {
-      if (i > 0) {
-        evdata.append(",");
-      }
+    evdata.append(StringUtil::format(
+        "{$0: $1}",
+        i,
+        info.loads[i]));
+  }
 
-      evdata.append(StringUtil::format(
-          "{$0: $1}",
-          i,
-          info.loads[i]));
-    }
+  evdata.append(StringUtil::format(R"(,{"procs": $0})", info.procs));
+  evdata.append(StringUtil::format(R"(,{"freeram": $0})", info.freeram));
+  evdata.append(StringUtil::format(R"(,{"freeswap": $0})", info.freeswap));
 
-    evdata.append(StringUtil::format(R"(,{"uptime": $0})", info.uptime));
-    evdata.append(StringUtil::format(R"(,{"procs": $0})", info.procs));
-    evdata.append(StringUtil::format(R"(,{"freeram": $0})", info.freeram));
-    evdata.append(StringUtil::format(R"(,{"freeswap": $0})", info.freeswap));
 #elif __APPLE__
-    struct loadavg loadinfo;
-    size_t size = sizeof(loadinfo);
+  struct loadavg loadinfo;
+  size_t size = sizeof(loadinfo);
 
-    if (sysctlbyname("vm.loadavg", &loadinfo, &size, NULL, 0) == -1) {
-      evcollect_seterror(
-          ctx,
-          StringUtil::format("sysctlbyname failed: $0", strerror(errno)).c_str());
-      return false;
+  if (sysctlbyname("vm.loadavg", &loadinfo, &size, NULL, 0) == -1) {
+    evcollect_seterror(
+        ctx,
+        StringUtil::format("sysctlbyname failed: $0", strerror(errno)).c_str());
+    return false;
+  }
+
+  /* load average for the last 1, 5 and 15 minutes */
+  for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
+    if (i > 0) {
+      evdata.append(",");
     }
 
-    for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
-      if (i > 0) {
-        evdata.append(",");
-      }
+    evdata.append(StringUtil::format(
+        "{$0: $1}",
+        i,
+        (double) loadinfo.ldavg[i] / loadinfo.fscale));
+  }
 
-      evdata.append(StringUtil::format(
-          "{$0: $1}",
-          i,
-          (double) loadinfo.ldavg[i] / loadinfo.fscale));
-    }
 #endif
 
-    evdata.append("}");
-  }
-
+  evdata.append("}");
   evcollect_event_setdata(ev, evdata.data(), evdata.size());
   return true;
 }
@@ -234,6 +234,16 @@ bool getUptimeEvent(
   return true;
 }
 
+bool getEvent(
+    evcollect_ctx_t* ctx,
+    void* userdata,
+    evcollect_event_t* ev) {
+  if (!getUptimeEvent(ctx, userdata, ev) ||
+      !getLoadAvgEvent(ctx, userdata, ev) ||
+      !getDiskUsageEvent(ctx, userdata, ev)) {
+    return false;
+  }
+}
 
 } // namespace plugin_unix_stats
 } // namespace evcollect
@@ -241,13 +251,22 @@ bool getUptimeEvent(
 EVCOLLECT_PLUGIN_INIT(unix_stats) {
   evcollect_source_plugin_register(
       ctx,
-      "unix_stats",
+      "unix.stats",
       &evcollect::plugin_unix_stats::getEvent);
 
   evcollect_source_plugin_register(
       ctx,
-      "unix_uptime",
+      "unix.uptime",
       &evcollect::plugin_unix_stats::getUptimeEvent);
 
+  evcollect_source_plugin_register(
+      ctx,
+      "unix.load_avg",
+      &evcollect::plugin_unix_stats::getLoadAvgEvent);
+
+  evcollect_source_plugin_register(
+      ctx,
+      "unix.disk_usage",
+      &evcollect::plugin_unix_stats::getDiskUsageEvent);
   return true;
 }
