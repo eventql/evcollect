@@ -32,6 +32,7 @@
 
 #if __linux__
 #include <mntent.h>
+#include <dirent.h>
 #include <sys/sysinfo.h>
 #endif
 
@@ -247,7 +248,18 @@ bool getProcessesEvent(
   std::string evdata;
 
 #if __linux__
-  
+  DIR *dir;
+  if (!(dir = opendir("/proc/")) {
+    evcollect_seterror(
+          ctx,
+          StringUtil::format("opendir('proc') failed: $0", strerror(errno)).c_str());
+    return false;
+  }
+
+  struct dirent *entry;
+  while (!(entry = readdir(dir)) {
+    printf("directory name: %s", dir.d_name);
+  }
 
 #elif __APPLE__
   size_t len = 0;
