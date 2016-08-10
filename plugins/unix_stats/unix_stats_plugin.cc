@@ -290,7 +290,7 @@ bool getProcessesEvent(
 
     fclose(file);
 
-    std::regex rgx("\\d");
+    std::regex rgx("(\\d+)\\s\((\\w+)\)\\s(\\w)");
     std::smatch match;
     if (!regex_search(static_cast<std::string>(content), match, rgx)) {
       evcollect_seterror(
