@@ -41,6 +41,7 @@
 #include <sys/mount.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <pwd.h>
 #endif
 
 namespace evcollect {
@@ -239,15 +240,70 @@ bool getUptimeEvent(
   return true;
 }
 
+bool getProcessesEvent(
+    evcollect_ctx_t* ctx,
+    void* userdata,
+    evcollect_event_t* ev) {
+  std::string evdata;
+
+#if __linux__
+  
+
+#elif __APPLE__
+  size_t len = 0;
+  int mib[3] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL};
+  if (sysctl(mib, 3, NULL, &len, NULL, 0) == -1) {
+    evcollect_seterror(
+          ctx,
+          StringUtil::format("sysctl failed: $0", strerror(errno)).c_str());
+    return false;
+  }
+
+  struct kinfo_proc *info;
+  info = static_cast<kinfo_proc*>(malloc(len));
+  if (sysctl(mib, 3, info, &len, NULL, 0) == -1) {
+    evcollect_seterror(
+          ctx,
+          StringUtil::format("sysctl failed: $0", strerror(errno)).c_str());
+    free(info);
+    return false;
+  }
+
+  int count = len / sizeof(kinfo_proc);
+  for (int i = 0; i < count; ++i) {
+    pid_t pid = info[i].kp_proc.p_pid;
+    if (pid == 0) {
+      continue;
+    }
+
+    uid_t uid = info[i].kp_eproc.e_ucred.cr_uid;
+    struct passwd *user = getpwuid(uid);
+    const char* username = user ? user->pw_name : "";
+
+    evdata.append(StringUtil::format(
+        R"({"pid": $0, "uid": $1, "username": "$2", "parent": $3, "group": $4})",
+        pid,
+        uid,
+        username,
+        info[i].kp_eproc.e_ppid,
+        info[i].kp_eproc.e_pgid));
+  }
+
+  free(info);
+#endif
+
+  evcollect_event_setdata(ev, evdata.data(), evdata.size());
+  return true;
+}
+
 bool getEvent(
     evcollect_ctx_t* ctx,
     void* userdata,
     evcollect_event_t* ev) {
-  if (!getUptimeEvent(ctx, userdata, ev) ||
-      !getLoadAvgEvent(ctx, userdata, ev) ||
-      !getDiskUsageEvent(ctx, userdata, ev)) {
-    return false;
-  }
+  return (!getUptimeEvent(ctx, userdata, ev) ||
+          !getLoadAvgEvent(ctx, userdata, ev) ||
+          !getDiskUsageEvent(ctx, userdata, ev) ||
+          !getProcessesEvent(ctx, userdata, ev));
 }
 
 } // namespace plugin_unix_stats
@@ -273,5 +329,10 @@ EVCOLLECT_PLUGIN_INIT(unix_stats) {
       ctx,
       "unix.disk_usage",
       &evcollect::plugin_unix_stats::getDiskUsageEvent);
+
+  evcollect_source_plugin_register(
+      ctx,
+      "unix.processes",
+      &evcollect::plugin_unix_stats::getProcessesEvent);
   return true;
 }
