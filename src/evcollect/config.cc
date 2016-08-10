@@ -74,14 +74,7 @@ ReturnCode loadConfig(
       // XXX: source plugin unix_stats
       b.sources.emplace_back();
       auto& s = b.sources.back();
-      s.plugin_name = "unix_stats";
-    }
-
-    {
-      // XXX: source plugin unix_stats
-      b.sources.emplace_back();
-      auto& s = b.sources.back();
-      s.plugin_name = "unix_uptime";
+      s.plugin_name = "unix.stats";
     }
   }
 
@@ -138,7 +131,7 @@ ReturnCode loadConfig(
     b.interval_micros = 1000000;
     b.sources.emplace_back();
     auto& s = b.sources.back();
-    s.plugin_name = "unix_stats";
+    s.plugin_name = "unix.stats";
   }
   return ReturnCode::success();
 }
