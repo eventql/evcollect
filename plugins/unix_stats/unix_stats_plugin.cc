@@ -31,6 +31,7 @@
 #include <evcollect/util/time.h>
 
 #if __linux__
+#include <regex>
 #include <mntent.h>
 #include <dirent.h>
 #include <sys/sysinfo.h>
@@ -248,17 +249,57 @@ bool getProcessesEvent(
   std::string evdata;
 
 #if __linux__
-  DIR *dir;
-  if (!(dir = opendir("/proc/")) {
+  auto dir = opendir("/proc/");
+  if (!dir) {
     evcollect_seterror(
           ctx,
-          StringUtil::format("opendir('proc') failed: $0", strerror(errno)).c_str());
+          "opendir failed");
+          //StringUtil::format("opendir failed: $0", strerror(errno)).c_str());
     return false;
   }
 
-  struct dirent *entry;
-  while (!(entry = readdir(dir)) {
-    printf("directory name: %s", dir.d_name);
+  for (;;) {
+    auto entry = readdir(dir);
+    if (!entry) {
+      break;
+    }
+
+    if (entry->d_type == DT_DIR) {
+    //  continue;
+    }
+
+    if (StringUtil::isNumber(entry->d_name)) {
+
+    }
+
+    //auto file = fopen(
+    //    StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
+    //    "r");
+    //if (!file) {
+    //  evcollect_seterror(
+    //      ctx,
+    //      "fopen failed");
+    //  return false;
+    //}
+
+    //char content[2048];
+    //if (!fgets(content, 2048, file)) {
+    //  evcollect_seterror(
+    //      ctx,
+    //      "fgets failed");
+    //  return false;
+    //}
+
+    //std::regex rgx("\\d");
+    //std::smatch match;
+    //if (!regex_search(static_cast<std::string>(content), match, rgx)) {
+    //  evcollect_seterror(
+    //      ctx,
+    //      "regex_search failed");
+    //  return false;
+    //}
+
+    //printf("match %s", match[0]);
   }
 
 #elif __APPLE__
