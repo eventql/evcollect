@@ -92,6 +92,7 @@ protected:
   std::string spool_dir_;
   std::string plugin_dir_;
   PluginMap plugin_map_;
+  PluginContext plugin_ctx_;
   std::vector<std::unique_ptr<EventBinding>> event_bindings_;
   std::vector<std::unique_ptr<TargetBinding>> targets_;
   std::multiset<
@@ -111,6 +112,7 @@ ServiceImpl::ServiceImpl(
       return a->next_tick < b->next_tick;
     }),
     listen_fd_(-1) {
+  plugin_ctx_.plugin_map = &plugin_map_;
   LogfileSourcePlugin::registerPlugin(&plugin_map_);
 
   if (pipe(wakeup_pipe_) < 0) {
@@ -198,9 +200,6 @@ ReturnCode ServiceImpl::addTarget(const TargetConfig* binding) {
 }
 
 ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
-  PluginContext plugin_ctx;
-  plugin_ctx.plugin_map = &plugin_map_;
-
   std::vector<std::string> path_candidates;
   std::string plugin_name;
   if (StringUtil::isShellSafe(plugin)) {
@@ -229,7 +228,7 @@ ReturnCode ServiceImpl::loadPlugin(const std::string& plugin) {
       continue;
     }
 
-    auto rc = evcollect::loadPlugin(&plugin_ctx, plugin_name, path);
+    auto rc = evcollect::loadPlugin(&plugin_ctx_, plugin_name, path);
     if (rc.isSuccess()) {
       return rc;
     } else {
@@ -253,7 +252,7 @@ ReturnCode ServiceImpl::loadPlugin(bool (*init_fn)(evcollect_ctx_t* ctx)) {
   PluginContext plugin_ctx;
   plugin_ctx.plugin_map = &plugin_map_;
 
-  auto rc = evcollect::loadPlugin(&plugin_ctx, init_fn);
+  auto rc = evcollect::loadPlugin(&plugin_ctx_, init_fn);
   if (rc.isSuccess()) {
     return rc;
   } else {
