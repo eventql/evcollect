@@ -103,8 +103,8 @@ bool getDiskUsageEvent(
       continue;
     }
 
-    auto total =  (buf.f_blocks * buf.f_frsize) / (1024 * 1024 * 1024);
-    auto available =  (buf.f_bavail * buf.f_frsize) / (1024 * 1024 * 1024);
+    auto total =  (buf.f_blocks * buf.f_frsize);
+    auto available =  (buf.f_bavail * buf.f_frsize);
     auto used = total - available;
     auto capacity = total > 0 ? used / total : 1;
     auto ifree = buf.f_favail;
@@ -125,7 +125,7 @@ bool getDiskUsageEvent(
         total,
         used,
         available,
-        capacity,
+        capacity * 100,
         iused,
         ifree,
         StringUtil::jsonEscape(mount_info[i].mount_point)));
@@ -141,6 +141,7 @@ bool getLoadAvgEvent(
     void* userdata,
     evcollect_event_t* ev) {
   std::string evdata;
+
 #if __linux__
   struct sysinfo info;
   if (sysinfo(&info) == -1) {
@@ -149,6 +150,8 @@ bool getLoadAvgEvent(
   }
 
   /* load average for the last 1, 5 and 15 minutes */
+  evdata.append(R"("load_avg" : [)");
+
   for (size_t i = 0; i < sizeof(info.loads) / sizeof(info.loads[0]); ++i) {
     if (i > 0) {
       evdata.append(",");
@@ -160,7 +163,7 @@ bool getLoadAvgEvent(
         info.loads[i]));
   }
 
-  evdata.append(StringUtil::format(R"(,{"procs": $0})", info.procs));
+  evdata.append(StringUtil::format(R"(],{"procs": $0})", info.procs));
   evdata.append(StringUtil::format(R"(,{"freeram": $0})", info.freeram));
   evdata.append(StringUtil::format(R"(,{"freeswap": $0})", info.freeswap));
 
@@ -176,6 +179,8 @@ bool getLoadAvgEvent(
   }
 
   /* load average for the last 1, 5 and 15 minutes */
+  evdata.append(R"("load_avg" : [)");
+
   for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
     if (i > 0) {
       evdata.append(",");
