@@ -264,42 +264,45 @@ bool getProcessesEvent(
       break;
     }
 
-    if (entry->d_type == DT_DIR) {
-    //  continue;
+    if (entry->d_type != DT_DIR || (!StringUtil::isNumber(entry->d_name))) {
+      continue;
     }
 
-    if (StringUtil::isNumber(entry->d_name)) {
-
+    auto file = fopen(
+        StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
+        "r");
+    if (!file) {
+      evcollect_seterror(
+          ctx,
+          "fopen failed");
+      return false;
     }
 
-    //auto file = fopen(
-    //    StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
-    //    "r");
-    //if (!file) {
-    //  evcollect_seterror(
-    //      ctx,
-    //      "fopen failed");
-    //  return false;
-    //}
 
-    //char content[2048];
-    //if (!fgets(content, 2048, file)) {
-    //  evcollect_seterror(
-    //      ctx,
-    //      "fgets failed");
-    //  return false;
-    //}
+    char content[2048];
+    if (!fgets(content, 2048, file)) {
+      fclose(file);
+      evcollect_seterror(
+          ctx,
+          "fgets failed");
+      return false;
+    }
 
-    //std::regex rgx("\\d");
-    //std::smatch match;
-    //if (!regex_search(static_cast<std::string>(content), match, rgx)) {
-    //  evcollect_seterror(
-    //      ctx,
-    //      "regex_search failed");
-    //  return false;
-    //}
+    fclose(file);
 
-    //printf("match %s", match[0]);
+    std::regex rgx("\\d");
+    std::smatch match;
+    if (!regex_search(static_cast<std::string>(content), match, rgx)) {
+      evcollect_seterror(
+          ctx,
+          "regex_search failed");
+      return false;
+    }
+
+    for (size_t i = 0; i < match.size(); ++i) {
+      std::string blah = match.str() + "";
+      printf("match %s", blah.c_str());
+    }
   }
 
 #elif __APPLE__
