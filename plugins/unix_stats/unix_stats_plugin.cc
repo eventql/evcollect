@@ -29,6 +29,7 @@
 #include <evcollect/evcollect.h>
 #include <evcollect/util/stringutil.h>
 #include <evcollect/util/time.h>
+#include <disk_stats.h>
 
 #if __linux__
 #include <fstream>
@@ -49,95 +50,6 @@
 namespace evcollect {
 namespace plugin_unix_stats {
 
-struct MountInfo {
-  std::string device;
-  std::string mount_point;
-};
-
-static std::vector<MountInfo> getMountInfo() {
-std::vector<MountInfo> mount_info;
-#ifdef __linux__
-
-  auto file = setmntent(MOUNTED, "r");
-  while (auto mntent = getmntent(file)) {
-    MountInfo mn_info = {
-      .device = mntent->mnt_fsname,
-      .mount_point = mntent->mnt_dir
-    };
-
-    mount_info.emplace_back(mn_info);
-  }
-
-#elif __APPLE__
-
-  struct statfs *mntbuf;
-  auto mntsize = getmntinfo(&mntbuf, MNT_NOWAIT);
-  for (auto i = 0; i < mntsize; ++i) {
-    MountInfo mn_info = {
-      .device = mntbuf[i].f_mntfromname,
-      .mount_point = mntbuf[i].f_mntonname
-    };
-
-    mount_info.emplace_back(mn_info);
-  }
-
-#else
-#error "unsupported os" 
-#endif
-
-  return mount_info;
-}
-
-bool getDiskUsageEvent(
-    evcollect_ctx_t* ctx,
-    void* userdata,
-    evcollect_event_t* ev) {
-  std::string evdata;
-
-  evdata.append(R"({"disk_stats": [)");
-  auto mount_info = getMountInfo();
-  for (size_t i = 0; i < mount_info.size(); ++i) {
-    if (i > 0) {
-      evdata.append(",");
-    }
-
-    struct statvfs buf;
-    if (statvfs(mount_info[i].mount_point.c_str(), &buf) == -1) {
-      continue;
-    }
-
-    auto total =  (buf.f_blocks * buf.f_frsize);
-    auto available =  (buf.f_bavail * buf.f_frsize);
-    auto used = total - available;
-    auto capacity = total > 0 ? used / total : 1;
-    auto ifree = buf.f_favail;
-    auto iused = buf.f_files - ifree;
-
-    evdata.append(StringUtil::format(
-        R"({ 
-          "filesystem": "$0",
-          "total": $1,
-          "used": $2,
-          "available": $3,
-          "capacity": $4,
-          "iused": $5,
-          "ifree": $6,
-          "mount_point": "$7"
-        })",
-        StringUtil::jsonEscape(mount_info[i].device),
-        total,
-        used,
-        available,
-        capacity * 100,
-        iused,
-        ifree,
-        StringUtil::jsonEscape(mount_info[i].mount_point)));
-  }
-
-  evdata.append("]}");
-  evcollect_event_setdata(ev, evdata.data(), evdata.size());
-  return true;
-}
 
 bool getLoadAvgEvent(
     evcollect_ctx_t* ctx,
@@ -400,39 +312,45 @@ bool getEvent(
     evcollect_ctx_t* ctx,
     void* userdata,
     evcollect_event_t* ev) {
-  return (!getUptimeEvent(ctx, userdata, ev) ||
-          !getLoadAvgEvent(ctx, userdata, ev) ||
-          !getDiskUsageEvent(ctx, userdata, ev) ||
-          !getProcessesEvent(ctx, userdata, ev));
+
+  DiskInfo disk_info;
+  if (!getDiskInfo(disk_info)) {
+    return false;
+  }
+  return true;
+ // return (!getUptimeEvent(ctx, userdata, ev) ||
+ //         !getLoadAvgEvent(ctx, userdata, ev) ||
+ //         !getDiskUsageEvent(ctx, userdata, ev) ||
+ //         !getProcessesEvent(ctx, userdata, ev));
 }
 
 } // namespace plugin_unix_stats
 } // namespace evcollect
 
 EVCOLLECT_PLUGIN_INIT(unix_stats) {
-  evcollect_source_plugin_register(
-      ctx,
-      "unix.stats",
-      &evcollect::plugin_unix_stats::getEvent);
+  //evcollect_source_plugin_register(
+  //    ctx,
+  //    "unix.stats",
+  //    &evcollect::plugin_unix_stats::getEvent);
 
-  evcollect_source_plugin_register(
-      ctx,
-      "unix.uptime",
-      &evcollect::plugin_unix_stats::getUptimeEvent);
+  //evcollect_source_plugin_register(
+  //    ctx,
+  //    "unix.uptime",
+  //    &evcollect::plugin_unix_stats::getUptimeEvent);
 
-  evcollect_source_plugin_register(
-      ctx,
-      "unix.load_avg",
-      &evcollect::plugin_unix_stats::getLoadAvgEvent);
+  //evcollect_source_plugin_register(
+  //    ctx,
+  //    "unix.load_avg",
+  //    &evcollect::plugin_unix_stats::getLoadAvgEvent);
 
-  evcollect_source_plugin_register(
-      ctx,
-      "unix.disk_usage",
-      &evcollect::plugin_unix_stats::getDiskUsageEvent);
+  //evcollect_source_plugin_register(
+  //    ctx,
+  //    "unix.disk_usage",
+  //    &evcollect::plugin_unix_stats::getDiskUsageEvent);
 
-  evcollect_source_plugin_register(
-      ctx,
-      "unix.processes",
-      &evcollect::plugin_unix_stats::getProcessesEvent);
+  //evcollect_source_plugin_register(
+  //    ctx,
+  //    "unix.processes",
+  //    &evcollect::plugin_unix_stats::getProcessesEvent);
   return true;
 }

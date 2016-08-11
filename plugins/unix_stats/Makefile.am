@@ -7,6 +7,8 @@ AM_LDFLAGS = -fvisibility=hidden -module -avoid-version -shared -export-dynamic 
 noinst_LTLIBRARIES = plugin_unix_stats.la
 
 plugin_unix_stats_la_SOURCES = \
+    disk_stats.h \
+    disk_stats.cc \
     unix_stats_plugin.cc
 
 PLUGINDIR=$(DESTDIR)$(libdir)/evcollect/plugins
