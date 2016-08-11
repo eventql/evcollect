@@ -258,6 +258,9 @@ bool getProcessesEvent(
     return false;
   }
 
+  evdata.append("[");
+
+  size_t i = 0;
   for (;;) {
     auto entry = readdir(dir);
     if (!entry) {
@@ -275,51 +278,57 @@ bool getProcessesEvent(
       return false;
     }
 
-    size_t i = 0;
+    if (i++ > 0) {
+      evdata.append(",");
+    }
+
+    evdata.append("{");
+
+    size_t j = 0;
     std::string buf;
     while (!file.eof()) {
       char c;
       file.get(c);
       if (isspace(c)) {
-        switch (i++) {
+        switch (j++) {
           case 0: /* process id */
-            evdata.append(StringUtil::format(R"({"pid": $0)", buf));
+            evdata.append(StringUtil::format(R"("pid": $0)", buf));
             break;
 
           case 1:  /* filename of the executable */
-            evdata.append(StringUtil::format(R"({"name": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"name": "$0")", buf));
             break;
 
           case 2: /* process state */
-            evdata.append(StringUtil::format(R"({"state": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"state": "$0")", buf));
             break;
 
           case 3: /* parent PID */
-            evdata.append(StringUtil::format(R"({"ppid": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"ppid": $0)", buf));
             break;
 
           case 4: /* group ID */
-            evdata.append(StringUtil::format(R"({"pgrp": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"pgrp": $0)", buf));
             break;
 
           case 13: /* time in user mode */
-            evdata.append(StringUtil::format(R"({"utime": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"utime": $0)", buf));
             break;
 
           case 14: /* time in kernel mode */
-            evdata.append(StringUtil::format(R"({"stime": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"stime": $0)", buf));
             break;
 
           case 18: /* nice value */
-            evdata.append(StringUtil::format(R"({"nice": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"nice": $0)", buf));
             break;
 
           case 21: /* starttime */
-            evdata.append(StringUtil::format(R"({"starttime": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"starttime": $0)", buf));
             break;
 
           case 22: /* virtual memory size */
-            evdata.append(StringUtil::format(R"({"vsize": $0)", buf));
+            evdata.append(StringUtil::format(R"(,"vsize": $0)", buf));
             break;
 
           default:
@@ -330,8 +339,11 @@ bool getProcessesEvent(
       } else {
         buf.push_back(c);
       }
+
     }
+    evdata.append("}");
   }
+  evdata.append("]");
 
 #elif __APPLE__
   size_t len = 0;
