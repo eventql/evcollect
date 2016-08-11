@@ -31,7 +31,7 @@
 #include <evcollect/util/time.h>
 
 #if __linux__
-#include <regex>
+#include <fstream>
 #include <mntent.h>
 #include <dirent.h>
 #include <sys/sysinfo.h>
@@ -268,41 +268,60 @@ bool getProcessesEvent(
       continue;
     }
 
-    auto file = fopen(
+    std::ifstream file(
         StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
-        "r");
-    if (!file) {
-      evcollect_seterror(
-          ctx,
-          "fopen failed");
+        std::ifstream::in);
+    if (!file.is_open()) {
       return false;
     }
 
+    size_t i = 0;
+    std::string buf;
+    while (!file.eof()) {
+      char c;
+      file.get(c);
+      if (isspace(c)) {
+        switch (i++) {
+          case 0:
+            evdata.append(StringUtil::format(R"({"pid": $0)", buf));
+            break;
 
-    char content[2048];
-    if (!fgets(content, 2048, file)) {
-      fclose(file);
-      evcollect_seterror(
-          ctx,
-          "fgets failed");
-      return false;
+          case 1:
+            evdata.append(StringUtil::format(R"({"ex_name": $0)", buf));
+            break;
+
+          default:
+            break;
+        }
+
+        buf.clear();
+      } else {
+        buf.push_back(c);
+      }
     }
 
-    fclose(file);
+    //auto file = fopen(
+    //    StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
+    //    "r");
+    //if (!file) {
+    //  evcollect_seterror(
+    //      ctx,
+    //      "fopen failed");
+    //  return false;
+    //}
 
-    std::regex rgx("(\\d+)\\s\((\\w+)\)\\s(\\w)");
-    std::smatch match;
-    if (!regex_search(static_cast<std::string>(content), match, rgx)) {
-      evcollect_seterror(
-          ctx,
-          "regex_search failed");
-      return false;
-    }
 
-    for (size_t i = 0; i < match.size(); ++i) {
-      std::string blah = match.str() + "";
-      printf("match %s", blah.c_str());
-    }
+    //char content[2048];
+    //if (!fgets(content, 2048, file)) {
+    //  fclose(file);
+    //  evcollect_seterror(
+    //      ctx,
+    //      "fgets failed");
+    //  return false;
+    //}
+
+    //fclose(file);
+    
   }
 
 #elif __APPLE__
