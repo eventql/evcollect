@@ -341,8 +341,10 @@ bool getProcessesEvent(
       }
 
     }
+
     evdata.append("}");
   }
+
   evdata.append("]");
 
 #elif __APPLE__
