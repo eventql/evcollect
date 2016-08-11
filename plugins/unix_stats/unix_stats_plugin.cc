@@ -259,7 +259,6 @@ bool getProcessesEvent(
   }
 
   evdata.append("[");
-
   size_t i = 0;
   for (;;) {
     auto entry = readdir(dir);
@@ -349,7 +348,7 @@ bool getProcessesEvent(
 
 #elif __APPLE__
   size_t len = 0;
-  int mib[3] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL};
+  int mib[3] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL};
   if (sysctl(mib, 3, NULL, &len, NULL, 0) == -1) {
     evcollect_seterror(
           ctx,
@@ -360,10 +359,10 @@ bool getProcessesEvent(
   struct kinfo_proc *info;
   info = static_cast<kinfo_proc*>(malloc(len));
   if (sysctl(mib, 3, info, &len, NULL, 0) == -1) {
+    free(info);
     evcollect_seterror(
           ctx,
           StringUtil::format("sysctl failed: $0", strerror(errno)).c_str());
-    free(info);
     return false;
   }
 
@@ -374,17 +373,20 @@ bool getProcessesEvent(
       continue;
     }
 
-    uid_t uid = info[i].kp_eproc.e_ucred.cr_uid;
-    struct passwd *user = getpwuid(uid);
-    const char* username = user ? user->pw_name : "";
-
     evdata.append(StringUtil::format(
-        R"({"pid": $0, "uid": $1, "username": "$2", "parent": $3, "group": $4})",
+        R"({
+            "pid": $0,
+            "parent": $1,
+            "group": $2,
+            "nice": $3,
+            "starttime": $4,
+            "state": "$5"})",
         pid,
-        uid,
-        username,
         info[i].kp_eproc.e_ppid,
-        info[i].kp_eproc.e_pgid));
+        info[i].kp_eproc.e_pgid,
+        info[i].kp_proc.p_nice,
+        info[i].kp_proc.p_un.__p_starttime.tv_sec,
+        info[i].kp_proc.p_stat));
   }
 
   free(info);
