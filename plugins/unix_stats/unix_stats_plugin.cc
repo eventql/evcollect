@@ -282,12 +282,44 @@ bool getProcessesEvent(
       file.get(c);
       if (isspace(c)) {
         switch (i++) {
-          case 0:
+          case 0: /* process id */
             evdata.append(StringUtil::format(R"({"pid": $0)", buf));
             break;
 
-          case 1:
-            evdata.append(StringUtil::format(R"({"ex_name": $0)", buf));
+          case 1:  /* filename of the executable */
+            evdata.append(StringUtil::format(R"({"name": $0)", buf));
+            break;
+
+          case 2: /* process state */
+            evdata.append(StringUtil::format(R"({"state": $0)", buf));
+            break;
+
+          case 3: /* parent PID */
+            evdata.append(StringUtil::format(R"({"ppid": $0)", buf));
+            break;
+
+          case 4: /* group ID */
+            evdata.append(StringUtil::format(R"({"pgrp": $0)", buf));
+            break;
+
+          case 13: /* time in user mode */
+            evdata.append(StringUtil::format(R"({"utime": $0)", buf));
+            break;
+
+          case 14: /* time in kernel mode */
+            evdata.append(StringUtil::format(R"({"stime": $0)", buf));
+            break;
+
+          case 18: /* nice value */
+            evdata.append(StringUtil::format(R"({"nice": $0)", buf));
+            break;
+
+          case 21: /* starttime */
+            evdata.append(StringUtil::format(R"({"starttime": $0)", buf));
+            break;
+
+          case 22: /* virtual memory size */
+            evdata.append(StringUtil::format(R"({"vsize": $0)", buf));
             break;
 
           default:
@@ -299,29 +331,6 @@ bool getProcessesEvent(
         buf.push_back(c);
       }
     }
-
-    //auto file = fopen(
-    //    StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
-    //    "r");
-    //if (!file) {
-    //  evcollect_seterror(
-    //      ctx,
-    //      "fopen failed");
-    //  return false;
-    //}
-
-
-    //char content[2048];
-    //if (!fgets(content, 2048, file)) {
-    //  fclose(file);
-    //  evcollect_seterror(
-    //      ctx,
-    //      "fgets failed");
-    //  return false;
-    //}
-
-    //fclose(file);
-    
   }
 
 #elif __APPLE__
