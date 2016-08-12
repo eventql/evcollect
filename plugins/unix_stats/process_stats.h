@@ -30,16 +30,17 @@ namespace evcollect {
 namespace plugin_unix_stats {
 
 struct ProcessInfo {
-  std::string filesystem;
-  std::string mount_point;
-  uint64_t total;
-  uint64_t used;
-  uint64_t available;
-  uint8_t capacity;
-  uint64_t iused;
-  uint64_t ifree;
+  uint64_t pid;
+  std::string name;
+  std::string state;
+  uint64_t ppid;
+  uint64_t pgrp;
+  uint64_t utime;
+  uint64_t stime;
+  int8_t nice;
+  uint64_t starttime;
+  uint64_t vsize;
 };
-
 
 bool getProcessInfo(std::vector<ProcessInfo> process_info);
 

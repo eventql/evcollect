@@ -17,6 +17,8 @@ plugin_unix_stats_la_SOURCES = \
     disk_stats.cc \
     kernel_stats.h \
     kernel_stats.cc \
+    process_stats.h \
+    process_stats.cc \
     unix_stats_plugin.cc
 
 PLUGINDIR=$(DESTDIR)$(libdir)/evcollect/plugins

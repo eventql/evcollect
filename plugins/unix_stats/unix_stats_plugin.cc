@@ -29,6 +29,7 @@
 #include <evcollect/evcollect.h>
 #include "disk_stats.h"
 #include "kernel_stats.h"
+#include "process_stats.h"
 #include "util/stringutil.h"
 #include "util/time.h"
 
@@ -61,8 +62,13 @@ int getEvent(
     return 0;
   }
 
-  plugin_unix_stats::KernelInfo kernel_info;
+  KernelInfo kernel_info;
   if (!getKernelInfo(kernel_info)) {
+    return false;
+  }
+
+  std::vector<ProcessInfo> process_list;
+  if (!getProcessInfo(process_list)) {
     return false;
   }
 
