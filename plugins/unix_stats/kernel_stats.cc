@@ -27,6 +27,7 @@
 
 #if __linux__
 #include <sys/sysinfo.h>
+#include <sys/utsname.h>
 #endif
 
 #if __APPLE__
@@ -39,25 +40,39 @@ namespace plugin_unix_stats {
 
 bool getKernelInfo(KernelInfo kernel_info) {
 #if __linux__
-  struct sysinfo info;
-  if (sysinfo(&info) == -1) {
-    //evcollect_seterror(ctx, "sysinfo failed");
-    return false;
+  /* load averages and uptime */
+  {
+    struct sysinfo info;
+    if (sysinfo(&info) == -1) {
+      //evcollect_seterror(ctx, "sysinfo failed");
+      return false;
+    }
+
+    /* load average for the last 1, 5 and 15 minutes */
+    switch (sizeof(info.loads) / sizeof(info.loads[0])) {
+      case 3:
+        kernel_info.load_avg.min15 = info.loads[2];
+
+      case 2:
+        kernel_info.load_avg.min15 = info.loads[1];
+
+      case 1:
+        kernel_info.load_avg.min5 = info.loads[0];
+    }
+
+    kernel_info.uptime = info.uptime;
   }
 
-  /* load average for the last 1, 5 and 15 minutes */
-  switch (sizeof(info.loads) / sizeof(info.loads[0])) {
-    case 3:
-      kernel_info.load_avg.min15 = info_loads[2];
+  /* version */
+  {
+    struct utsname info;
+    if (uname(&info) == -1) {
+      return false;
+    }
 
-    case 2:
-      kernel_info.load_avg.min15 = info_loads[1];
-
-    case 1:
-      kernel_info.load_avg.min5 = info_loads[0];
+    kernel_info.version = info.version;
   }
 
-  kernel_info.uptime = uptime;
 
 #elif __APPLE__
 
