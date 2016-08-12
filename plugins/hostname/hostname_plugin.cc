@@ -30,7 +30,7 @@
 namespace evcollect {
 namespace plugin_hostname {
 
-bool getEvent(
+int getEvent(
     evcollect_ctx_t* ctx,
     void* userdata,
     evcollect_event_t* ev) {
@@ -66,7 +66,12 @@ EVCOLLECT_PLUGIN_INIT(hostname) {
   evcollect_source_plugin_register(
       ctx,
       "hostname",
-      &evcollect::plugin_hostname::getEvent);
+      &evcollect::plugin_hostname::getEvent,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL);
 
   return true;
 }

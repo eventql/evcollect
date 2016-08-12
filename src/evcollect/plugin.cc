@@ -379,7 +379,7 @@ void evcollect_seterror(evcollect_ctx_t* ctx, const char* error) {
   ctx_->error = std::string(error);
 }
 
-bool evcollect_plugin_getcfg(
+int evcollect_plugin_getcfg(
     const evcollect_plugin_cfg_t* cfg,
     const char* key,
     const char** value) {
@@ -387,7 +387,7 @@ bool evcollect_plugin_getcfg(
   return cfg_->get(key, value);
 }
 
-bool evcollect_plugin_getcfgv(
+int evcollect_plugin_getcfgv(
     const evcollect_plugin_cfg_t* cfg,
     const char* key,
     size_t i,
