@@ -90,7 +90,6 @@ bool getKernelInfo(KernelInfo kernel_info) {
   {
     struct timeval t;
     size_t size = sizeof(t);
-
     if (sysctlbyname("kern.boottime", &t, &size, NULL, 0) == -1) {
       //evcollect_seterror(
       //    ctx,
@@ -105,14 +104,25 @@ bool getKernelInfo(KernelInfo kernel_info) {
   /* kernel version */
   {
     int mib[2] = {CTL_KERN, KERN_VERSION};
-    char version[256];
     size_t len = 256;
+    char version[len];
     if (sysctl(mib, 2, version, &len, NULL, 0) == -1) {
       return false;
     }
 
-    printf("kernel version %s", version);
+    kernel_info.version = version;
+  }
 
+  /* kernel version */
+  {
+    int mib[2] = {CTL_KERN, KERN_VERSION};
+    size_t len = 256;
+    char version[len];
+    if (sysctl(mib, 2, version, &len, NULL, 0) == -1) {
+      return false;
+    }
+
+    kernel_info.version = version;
   }
 #endif
 

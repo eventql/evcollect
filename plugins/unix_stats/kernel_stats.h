@@ -40,9 +40,7 @@ struct KernelInfo {
   plugin_unix_stats::LoadAvg load_avg;
 
   std::string version;
-  std::string arguments;
-  std::string path;
-  std::string device;
+  std::string arguments; /* linux only */
 };
 
 
