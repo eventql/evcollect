@@ -98,7 +98,7 @@ bool getDiskInfo(std::vector<DiskInfo> disk_info) {
 
 std::string toJSON(std::vector<DiskInfo> disk_info) {
   std::string json;
-  json.append(R"("disk_info": [)");
+  json.append(R"([)");
 
   for (size_t i = 0; i < disk_info.size(); ++i) {
     if (i > 0) {

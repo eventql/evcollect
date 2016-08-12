@@ -30,6 +30,7 @@
 #include <evcollect/util/stringutil.h>
 #include <evcollect/util/time.h>
 #include <disk_stats.h>
+#include <kernel_stats.h>
 
 #if __linux__
 #include <fstream>
@@ -49,110 +50,6 @@
 
 namespace evcollect {
 namespace plugin_unix_stats {
-
-
-bool getLoadAvgEvent(
-    evcollect_ctx_t* ctx,
-    void* userdata,
-    evcollect_event_t* ev) {
-  std::string evdata;
-
-#if __linux__
-  struct sysinfo info;
-  if (sysinfo(&info) == -1) {
-    evcollect_seterror(ctx, "sysinfo failed");
-    return false;
-  }
-
-  /* load average for the last 1, 5 and 15 minutes */
-  evdata.append(R"("load_avg" : [)");
-
-  for (size_t i = 0; i < sizeof(info.loads) / sizeof(info.loads[0]); ++i) {
-    if (i > 0) {
-      evdata.append(",");
-    }
-
-    evdata.append(StringUtil::format(
-        "{$0: $1}",
-        i,
-        info.loads[i]));
-  }
-
-  evdata.append(StringUtil::format(R"(],{"procs": $0})", info.procs));
-  evdata.append(StringUtil::format(R"(,{"freeram": $0})", info.freeram));
-  evdata.append(StringUtil::format(R"(,{"freeswap": $0})", info.freeswap));
-
-#elif __APPLE__
-  struct loadavg loadinfo;
-  size_t size = sizeof(loadinfo);
-
-  if (sysctlbyname("vm.loadavg", &loadinfo, &size, NULL, 0) == -1) {
-    evcollect_seterror(
-        ctx,
-        StringUtil::format("sysctlbyname failed: $0", strerror(errno)).c_str());
-    return false;
-  }
-
-  /* load average for the last 1, 5 and 15 minutes */
-  evdata.append(R"("load_avg" : [)");
-
-  for (size_t i = 0; i < sizeof(loadinfo.ldavg) / sizeof(fixpt_t); ++i) {
-    if (i > 0) {
-      evdata.append(",");
-    }
-
-    evdata.append(StringUtil::format(
-        "{$0: $1}",
-        i,
-        (double) loadinfo.ldavg[i] / loadinfo.fscale));
-  }
-
-#endif
-
-  evdata.append("}");
-  evcollect_event_setdata(ev, evdata.data(), evdata.size());
-  return true;
-}
-
-bool getUptimeEvent(
-    evcollect_ctx_t* ctx,
-    void* userdata,
-    evcollect_event_t* ev) {
-  std::string evdata;
-#if __linux__
-    struct sysinfo info;
-    if (sysinfo(&info) == -1) {
-      evcollect_seterror(ctx, "sysinfo failed");
-      return false;
-    }
-
-    auto uptime = info.uptime;
-
-#elif __APPLE__
-    struct timeval t;
-    size_t size = sizeof(t);
-
-    if (sysctlbyname("kern.boottime", &t, &size, NULL, 0) == -1) {
-      evcollect_seterror(
-          ctx,
-          StringUtil::format("sysctlbyname failed: $0", strerror(errno)).c_str());
-      return false;
-    }
-
-    UnixTime now;
-    auto uptime = (now.unixMicros() / kMicrosPerSecond) - t.tv_sec;
-#endif
-
-  evdata.append(StringUtil::format(
-      R"({"days": $0, "hours": $1, "minutes": $2, "seconds": $3})",
-      uptime / kSecondsPerDay,
-      uptime / kSecondsPerHour,
-      uptime / kSecondsPerMinute,
-      uptime));
-
-  evcollect_event_setdata(ev, evdata.data(), evdata.size());
-  return true;
-}
 
 bool getProcessesEvent(
     evcollect_ctx_t* ctx,
@@ -317,6 +214,12 @@ bool getEvent(
   if (!getDiskInfo(disk_info)) {
     return false;
   }
+
+  KernelInfo kernel_info;
+  if (!getKernelInfo(kernel_info)) {
+    return false;
+  }
+
   return true;
  // return (!getUptimeEvent(ctx, userdata, ev) ||
  //         !getLoadAvgEvent(ctx, userdata, ev) ||

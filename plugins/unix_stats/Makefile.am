@@ -9,6 +9,8 @@ noinst_LTLIBRARIES = plugin_unix_stats.la
 plugin_unix_stats_la_SOURCES = \
     disk_stats.h \
     disk_stats.cc \
+    kernel_stats.h \
+    kernel_stats.cc \
     unix_stats_plugin.cc
 
 PLUGINDIR=$(DESTDIR)$(libdir)/evcollect/plugins

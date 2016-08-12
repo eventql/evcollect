@@ -24,31 +24,32 @@
  */
 
 #include <vector>
-#include <evcollect/util/return_code.h>
+#include <string>
 
 namespace evcollect {
 namespace plugin_unix_stats {
 
-struct MountInfo {
+struct LoadAvg {
+  double min1;
+  double min5;
+  double min15;
+};
+
+struct KernelInfo {
+  uint64_t uptime;
+  plugin_unix_stats::LoadAvg load_avg;
+
+  std::string version;
+  std::string arguments;
+  std::string path;
   std::string device;
-  std::string mount_point;
-};
-
-struct DiskInfo {
-  std::string filesystem;
-  std::string mount_point;
-  uint64_t total;
-  uint64_t used;
-  uint64_t available;
-  uint8_t capacity;
-  uint64_t iused;
-  uint64_t ifree;
 };
 
 
-bool getDiskInfo(DiskInfo disk_info);
+bool getKernelInfo(KernelInfo kernel_info);
 
-std::string toJSON(DiskInfo disk_info);
+std::string toJSON(KernelInfo kernel_info);
 
 } //namespace plugin_unix_stats
 } //namespace evcollect
+
