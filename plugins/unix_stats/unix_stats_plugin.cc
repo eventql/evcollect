@@ -27,10 +27,10 @@
 #include <stdio.h>
 #include <sys/statvfs.h>
 #include <evcollect/evcollect.h>
-#include <evcollect/util/stringutil.h>
-#include <evcollect/util/time.h>
-#include <disk_stats.h>
-#include <kernel_stats.h>
+#include "disk_stats.h"
+#include "kernel_stats.h"
+#include "util/stringutil.h"
+#include "util/time.h"
 
 #if __linux__
 #include <fstream>
@@ -82,6 +82,7 @@ bool getProcessesEvent(
     std::ifstream file(
         StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
         std::ifstream::in);
+
     if (!file.is_open()) {
       return false;
     }
@@ -165,7 +166,7 @@ bool getProcessesEvent(
     return false;
   }
 
-  struct kinfo_proc *info;
+  struct kinfo_proc* info;
   info = static_cast<kinfo_proc*>(malloc(len));
   if (sysctl(mib, 3, info, &len, NULL, 0) == -1) {
     free(info);
@@ -193,9 +194,9 @@ bool getProcessesEvent(
         pid,
         info[i].kp_eproc.e_ppid,
         info[i].kp_eproc.e_pgid,
-        info[i].kp_proc.p_nice,
-        info[i].kp_proc.p_un.__p_starttime.tv_sec,
-        info[i].kp_proc.p_stat));
+        (uint64_t) info[i].kp_proc.p_nice,
+        (uint64_t) info[i].kp_proc.p_un.__p_starttime.tv_sec,
+        (uint64_t) info[i].kp_proc.p_stat));
   }
 
   free(info);

@@ -22,9 +22,8 @@
  * commercial activities involving this program without disclosing the source
  * code of your own applications
  */
-
-#include <kernel_stats.h>
-#include <evcollect/util/time.h>
+#include "kernel_stats.h"
+#include "util/time.h"
 
 #if __linux__
 #include <sys/sysinfo.h>
@@ -37,7 +36,6 @@
 
 namespace evcollect {
 namespace plugin_unix_stats {
-
 
 bool getKernelInfo(KernelInfo kernel_info) {
 #if __linux__
@@ -104,6 +102,18 @@ bool getKernelInfo(KernelInfo kernel_info) {
     kernel_info.uptime = (now.unixMicros() / kMicrosPerSecond) - t.tv_sec;
   }
 
+  /* kernel version */
+  {
+    int mib[2] = {CTL_KERN, KERN_VERSION};
+    char version[256];
+    size_t len = 256;
+    if (sysctl(mib, 2, version, &len, NULL, 0) == -1) {
+      return false;
+    }
+
+    printf("kernel version %s", version);
+
+  }
 #endif
 
   return true;

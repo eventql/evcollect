@@ -26,8 +26,9 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <disk_stats.h>
 #include <evcollect/util/stringutil.h>
+#include "disk_stats.h"
+
 #if __linux__
 #include <mntent.h>
 #endif
