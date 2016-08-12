@@ -61,10 +61,10 @@ int getEvent(
     return 0;
   }
 
-  //plugin_unix_stats::KernelInfo kernel_info;
-  //if (!getKernelInfo(kernel_info)) {
-  //  return false;
-  //}
+  plugin_unix_stats::KernelInfo kernel_info;
+  if (!getKernelInfo(kernel_info)) {
+    return false;
+  }
 
   return 1;
  // return (!getUptimeEvent(ctx, userdata, ev) ||
