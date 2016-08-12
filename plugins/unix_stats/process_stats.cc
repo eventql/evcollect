@@ -49,10 +49,12 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
 
   for (;;) {
     auto entry = readdir(dir);
+    /* end of directory */
     if (!entry) {
       break;
     }
 
+    /* skip if not one of the /proc/{pid} directories */
     if (entry->d_type != DT_DIR || (!StringUtil::isNumber(entry->d_name))) {
       continue;
     }
@@ -124,6 +126,7 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
     }
 
     process_info.emplace_back(info);
+    closedir(entry);
   }
 
   closedir(dir);
