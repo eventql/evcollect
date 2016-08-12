@@ -63,7 +63,7 @@ bool getKernelInfo(KernelInfo kernel_info) {
     kernel_info.uptime = info.uptime;
   }
 
-  /* version */
+  /* kernel version */
   {
     struct utsname info;
     if (uname(&info) == -1) {
@@ -73,7 +73,7 @@ bool getKernelInfo(KernelInfo kernel_info) {
     kernel_info.version = info.version;
   }
 
-  /* arguments */
+  /* kernel arguments */
   {
     auto file = fopen("/proc/cmdline", "r");
     if (!file) {
