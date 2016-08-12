@@ -73,7 +73,20 @@ bool getKernelInfo(KernelInfo kernel_info) {
     kernel_info.version = info.version;
   }
 
+  /* arguments */
+  {
+    auto file = fopen("/proc/cmdline", "r");
+    if (!file) {
+      return false;
+    }
 
+    char buf[256]; //FIXME size
+    while (fgets(buf, sizeof(buf), file)) {
+      kernel_info.arguments.append(buf);
+    }
+
+    fclose(file);
+  }
 #elif __APPLE__
 
   /* load averages */
