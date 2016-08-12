@@ -33,7 +33,6 @@
 #endif
 #include "time.h"
 #include "stringutil.h"
-#include "logging.h"
 
 UnixTime WallClock::now() {
   return UnixTime(WallClock::getUnixMicros());

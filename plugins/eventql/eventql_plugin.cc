@@ -354,7 +354,7 @@ ReturnCode EventQLTarget::uploadEvent(const EnqueuedEvent& ev) {
   }
 }
 
-bool pluginAttach(
+int pluginAttach(
     evcollect_ctx_t* ctx,
     const evcollect_plugin_cfg_t* cfg,
     void** userdata) {
@@ -457,14 +457,14 @@ bool pluginAttach(
   return true;
 }
 
-bool pluginDetach(evcollect_ctx_t* ctx, void* userdata) {
+int pluginDetach(evcollect_ctx_t* ctx, void* userdata) {
   auto target = static_cast<EventQLTarget*>(userdata);
   target->stopUploadThread();
   delete target;
   return true;
 }
 
-bool pluginEmitEvent(
+int pluginEmitEvent(
     evcollect_ctx_t* ctx,
     void* userdata,
     const evcollect_event_t* event) {
@@ -483,10 +483,10 @@ bool pluginEmitEvent(
       std::string(ev_data, ev_data_len));
 
   if (rc.isSuccess()) {
-    return true;
+    return 1;
   } else {
     evcollect_seterror(ctx, rc.getMessage().c_str());
-    return false;
+    return 0;
   }
 }
 
@@ -499,7 +499,9 @@ EVCOLLECT_PLUGIN_INIT(eventql) {
       "eventql",
       &evcollect::plugin_eventql::pluginEmitEvent,
       &evcollect::plugin_eventql::pluginAttach,
-      &evcollect::plugin_eventql::pluginDetach);
+      &evcollect::plugin_eventql::pluginDetach,
+      NULL,
+      NULL);
 
   return true;
 }

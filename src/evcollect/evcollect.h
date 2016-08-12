@@ -22,15 +22,16 @@
  * code of your own applications
  */
 #pragma once
-#include <string>
-#include <vector>
+#include <stdlib.h>
 
 /**
  * This file contains the common public C and C++ API as well as the C plugin
  * api
  */
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 typedef void evcollect_ctx_t;
 typedef void evcollect_plugin_cfg_t;
@@ -52,15 +53,15 @@ enum evcollect_loglevel {
 };
 
 void evcollect_log(
-    evcollect_loglevel level,
+    enum evcollect_loglevel level,
     const char* msg);
 
-bool evcollect_plugin_getcfg(
+int evcollect_plugin_getcfg(
     const evcollect_plugin_cfg_t* cfg,
     const char* key,
     const char** value);
 
-bool evcollect_plugin_getcfgv(
+int evcollect_plugin_getcfgv(
     const evcollect_plugin_cfg_t* cfg,
     const char* key,
     size_t i,
@@ -87,30 +88,30 @@ void evcollect_event_setdata(
     const char* data,
     size_t size);
 
-typedef bool (*evcollect_plugin_getnextevent_fn)(
+typedef int (*evcollect_plugin_getnextevent_fn)(
     evcollect_ctx_t* ctx,
     void* userdata,
     evcollect_event_t* ev);
 
-typedef bool (*evcollect_plugin_hasnextevent_fn)(
+typedef int (*evcollect_plugin_hasnextevent_fn)(
     evcollect_ctx_t* ctx,
     void* userdata);
 
-typedef bool (*evcollect_plugin_emitevent_fn)(
+typedef int (*evcollect_plugin_emitevent_fn)(
     evcollect_ctx_t* ctx,
     void* userdata,
     const evcollect_event_t* ev);
 
-typedef bool (*evcollect_plugin_attach_fn)(
+typedef int (*evcollect_plugin_attach_fn)(
     evcollect_ctx_t* ctx,
     const evcollect_plugin_cfg_t* cfg,
     void** userdata);
 
-typedef bool (*evcollect_plugin_detach_fn)(
+typedef int (*evcollect_plugin_detach_fn)(
     evcollect_ctx_t* ctx,
     void* userdata);
 
-typedef bool (*evcollect_plugin_init_fn)(
+typedef int (*evcollect_plugin_init_fn)(
     evcollect_ctx_t* ctx);
 
 typedef void (*evcollect_plugin_free_fn)(
@@ -120,30 +121,34 @@ void evcollect_source_plugin_register(
     evcollect_ctx_t* ctx,
     const char* plugin_name,
     evcollect_plugin_getnextevent_fn getnextevent_fn,
-    evcollect_plugin_hasnextevent_fn hasnextevent_fn = nullptr,
-    evcollect_plugin_attach_fn attach_fn = nullptr,
-    evcollect_plugin_detach_fn detach_fn = nullptr,
-    evcollect_plugin_init_fn init_fn = nullptr,
-    evcollect_plugin_free_fn free_fn = nullptr);
+    evcollect_plugin_hasnextevent_fn hasnextevent_fn,
+    evcollect_plugin_attach_fn attach_fn,
+    evcollect_plugin_detach_fn detach_fn,
+    evcollect_plugin_init_fn init_fn,
+    evcollect_plugin_free_fn free_fn);
 
 void evcollect_output_plugin_register(
     evcollect_ctx_t* ctx,
     const char* plugin_name,
     evcollect_plugin_emitevent_fn emitevent_fn,
-    evcollect_plugin_attach_fn attach_fn = nullptr,
-    evcollect_plugin_detach_fn detach_fn = nullptr,
-    evcollect_plugin_init_fn init_fn = nullptr,
-    evcollect_plugin_free_fn free_fn = nullptr);
+    evcollect_plugin_attach_fn attach_fn,
+    evcollect_plugin_detach_fn detach_fn,
+    evcollect_plugin_init_fn init_fn,
+    evcollect_plugin_free_fn free_fn);
 
-bool __evcollect_plugin_init(
+int __evcollect_plugin_init(
     evcollect_ctx_t* ctx);
 
 #define EVCOLLECT_PLUGIN_INIT(N) \
-    extern "C" __attribute__((visibility("default"))) bool plugin_ ## N ## _init(evcollect_ctx_t* ctx)
-
-} // extern "C"
+    extern "C" __attribute__((visibility("default"))) int plugin_ ## N ## _init(evcollect_ctx_t* ctx)
 
 #ifdef __cplusplus
+} // extern "C"
+#endif
+
+#ifdef __cplusplus
+#include <string>
+#include <vector>
 
 namespace evcollect {
 
