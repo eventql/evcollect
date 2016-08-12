@@ -46,9 +46,9 @@ struct DiskInfo {
 };
 
 
-bool getDiskInfo(DiskInfo disk_info);
+bool getDiskInfo(std::vector<DiskInfo> disk_info);
 
-std::string toJSON(DiskInfo disk_info);
+std::string toJSON(std::vector<DiskInfo> disk_info);
 
 } //namespace plugin_unix_stats
 } //namespace evcollect
