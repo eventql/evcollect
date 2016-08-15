@@ -167,8 +167,8 @@ std::string toJSON(KernelInfo kernel_info) {
           "min5": $2,
           "min15": $3
         },
-        "version": $4,
-        "arguments": $5
+        "version": "$4",
+        "arguments": "$5"
       }})",
       kernel_info.uptime,
       kernel_info.load_avg.min1,

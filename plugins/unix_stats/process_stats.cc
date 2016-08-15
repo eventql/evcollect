@@ -23,6 +23,7 @@
  * code of your own applications
  */
 
+#include "util/stringutil.h"
 #include "process_stats.h"
 #if __linux__
 //#include <fstream>
@@ -171,8 +172,42 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
   return true;
 }
 
-std::string toJSON(std::vector<ProcessInfo> process_info) {
-  std::string json;
+std::string toJSON(std::vector<ProcessInfo> process_list) {
+  std::string json = "[";
+
+  for (size_t i = 0; i < process_list.size(); ++i) {
+    if (i > 0) {
+      json.append(",");
+    }
+
+
+    json.append(StringUtil::format(R"({
+      "process": {
+        "pid": $0,
+        "name": "$1",
+        "state": "$2",
+        "ppid": $3,
+        "pgrp": $4,
+        "utime": $5,
+        "stime": $6,
+        "nice": $7,
+        "starttime": $8,
+        "vsize": $9,
+      }})",
+      process_list[i].pid,
+      process_list[i].name,
+      process_list[i].state,
+      process_list[i].ppid,
+      process_list[i].pgrp,
+      process_list[i].utime,
+      process_list[i].stime,
+      process_list[i].nice,
+      process_list[i].starttime,
+      process_list[i].vsize));
+  }
+
+  json.append("]");
+
   return json;
 }
 
