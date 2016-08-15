@@ -54,7 +54,7 @@ std::vector<MountInfo> getMountInfo() {
 
     mount_info.emplace_back(mn_info);
   }
-  //FIXME close file
+  fclose(file);
 
 #elif __APPLE__
   struct statfs* mntbuf;
@@ -107,12 +107,14 @@ std::string toJSON(std::vector<DiskInfo> disk_info) {
     }
 
     json.append(StringUtil::format(R"({
-      "total": $0,
-      "available": $1,
-      "used": $2,
-      "capacity": $3,
-      "ifree": $4,
-      "iused": $5})",
+      "disk": {
+        "total": $0,
+        "available": $1,
+        "used": $2,
+        "capacity": $3,
+        "ifree": $4,
+        "iused": $5
+      }})",
       disk_info[i].total,
       disk_info[i].available,
       disk_info[i].used,

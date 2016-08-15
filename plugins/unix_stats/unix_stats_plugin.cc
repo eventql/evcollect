@@ -64,19 +64,20 @@ int getEvent(
 
   KernelInfo kernel_info;
   if (!getKernelInfo(kernel_info)) {
-    return false;
+    return 0;
   }
 
   std::vector<ProcessInfo> process_list;
   if (!getProcessInfo(process_list)) {
-    return false;
+    return 0;
   }
 
+  std::string json;
+  json.append(toJSON(disk_info));
+  json.append(toJSON(kernel_info));
+  json.append(toJSON(process_list));
+
   return 1;
- // return (!getUptimeEvent(ctx, userdata, ev) ||
- //         !getLoadAvgEvent(ctx, userdata, ev) ||
- //         !getDiskUsageEvent(ctx, userdata, ev) ||
- //         !getProcessesEvent(ctx, userdata, ev));
 }
 
 } // namespace plugin_unix_stats
@@ -92,26 +93,6 @@ EVCOLLECT_PLUGIN_INIT(unix_stats) {
       NULL,
       NULL,
       NULL);
-  
 
-  //evcollect_source_plugin_register(
-  //    ctx,
-  //    "unix.uptime",
-  //    &evcollect::plugin_unix_stats::getUptimeEvent);
-
-  //evcollect_source_plugin_register(
-  //    ctx,
-  //    "unix.load_avg",
-  //    &evcollect::plugin_unix_stats::getLoadAvgEvent);
-
-  //evcollect_source_plugin_register(
-  //    ctx,
-  //    "unix.disk_usage",
-  //    &evcollect::plugin_unix_stats::getDiskUsageEvent);
-
-  //evcollect_source_plugin_register(
-  //    ctx,
-  //    "unix.processes",
-  //    &evcollect::plugin_unix_stats::getProcessesEvent);
   return true;
 }
