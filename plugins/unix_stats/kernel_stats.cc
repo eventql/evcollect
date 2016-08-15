@@ -24,6 +24,7 @@
  */
 #include "kernel_stats.h"
 #include "util/time.h"
+#include "util/stringutil.h"
 
 #if __linux__
 #include <sys/sysinfo.h>
@@ -158,7 +159,25 @@ bool getKernelInfo(KernelInfo kernel_info) {
 }
 
 std::string toJSON(KernelInfo kernel_info) {
+  std::string json = StringUtil::format(R"({
+      "kernel": {
+        "uptime": $0,
+        "load_avg": {
+          "min1": $1,
+          "min5": $2,
+          "min15": $3
+        },
+        "version": $4,
+        "arguments": $5
+      }})",
+      kernel_info.uptime,
+      kernel_info.load_avg.min1,
+      kernel_info.load_avg.min5,
+      kernel_info.load_avg.min15,
+      kernel_info.version,
+      kernel_info.arguments);
 
+  return json;
 }
 
 } //namespace plugin_unix_stats
