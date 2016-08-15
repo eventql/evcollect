@@ -23,31 +23,10 @@
  * code of your own applications
  */
 #include <string>
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/statvfs.h>
 #include <evcollect/evcollect.h>
 #include "disk_stats.h"
 #include "kernel_stats.h"
 #include "process_stats.h"
-#include "util/stringutil.h"
-#include "util/time.h"
-
-#if __linux__
-#include <fstream>
-#include <mntent.h>
-#include <dirent.h>
-#include <sys/sysinfo.h>
-#endif
-
-#if __APPLE__
-#include <sys/param.h>
-#include <sys/ucred.h>
-#include <sys/mount.h>
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#include <pwd.h>
-#endif
 
 namespace evcollect {
 namespace plugin_unix_stats {
