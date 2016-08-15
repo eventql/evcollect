@@ -54,7 +54,7 @@ std::vector<MountInfo> getMountInfo() {
 
     mount_info.emplace_back(mn_info);
   }
-  //FIXME close file
+  fclose(file);
 
 #elif __APPLE__
   struct statfs* mntbuf;
