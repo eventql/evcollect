@@ -24,7 +24,6 @@
  */
 
 #include <vector>
-#include <evcollect/util/return_code.h>
 
 namespace evcollect {
 namespace plugin_unix_stats {
