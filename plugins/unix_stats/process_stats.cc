@@ -24,10 +24,11 @@
  */
 
 #include "process_stats.h"
+#include "util/stringutil.h"
 #if __linux__
-//#include <fstream>
+#include <fstream>
 //#include <mntent.h>
-//#include <dirent.h>
+#include <dirent.h>
 //#include <sys/sysinfo.h>
 #endif
 
@@ -59,8 +60,9 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
       continue;
     }
 
+    auto file_name = StringUtil::format("/proc/$0/stat", entry->d_name);
     std::ifstream file(
-        StringUtil::format("/proc/$0/stat", entry->d_name).c_str(),
+        file_name.c_str(),
         std::ifstream::in);
 
     if (!file.is_open()) {
@@ -76,7 +78,7 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
       if (isspace(c)) {
         switch (i++) {
           case 0: /* process id */
-            info.pid = buf;
+            info.pid = std::stoull(buf);
             break;
 
           case 1:  /* filename of the executable */
@@ -88,31 +90,31 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
             break;
 
           case 3: /* parent PID */
-            info.ppid = buf;
+            info.ppid = std::stoull(buf);
             break;
 
           case 4: /* group ID */
-            info.pgrp = buf;
+            info.pgrp = std::stoull(buf);
             break;
 
           case 13: /* time in user mode */
-            info.utime = buf;
+            info.utime = std::stoull(buf);
             break;
 
           case 14: /* time in kernel mode */
-            info.stime - buf;
+            info.stime = std::stoull(buf);
             break;
 
           case 18: /* nice value */
-            info.nice = buf;
+            info.nice = std::stoul(buf);
             break;
 
           case 21: /* starttime */
-            info.starttime = buf;
+            info.starttime = std::stoull(buf);
             break;
 
           case 22: /* virtual memory size */
-            info.vsize = buf;
+            info.vsize = std::stoull(buf);
             break;
 
           default:
@@ -126,7 +128,6 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
     }
 
     process_info.emplace_back(info);
-    closedir(entry);
   }
 
   closedir(dir);
