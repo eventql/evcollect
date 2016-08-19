@@ -14,17 +14,17 @@ different plugins that can each used by itself or combined
     </tr>
     <tr>
       <td>load_avg.min1</td>
-      <td>Integer</td>
+      <td>Double</td>
       <td>Load average during the last minute</td>
     </tr>
     <tr>
       <td>load_avg.min5</td>
-      <td>Integer</td>
+      <td>Double</td>
       <td>Load average during the last five minutes</td>
     </tr>
     <tr>
       <td>load_avg.min15</td>
-      <td>Integer</td>
+      <td>Double</td>
       <td>Load average during the last 15 minutes</td>
     </tr>
     <tr>
@@ -40,6 +40,13 @@ different plugins that can each used by itself or combined
   </tbody>
 </table>
 
+
+    CREATE TABLE unix.kernel (
+      uptime UINT64,
+      load_avg RECORD (min1, min5, min15),
+      arguments STRING,
+      version STRING
+    )
 
 ###unix.disk_usage
 <table>
@@ -88,54 +95,88 @@ different plugins that can each used by itself or combined
 </table>
 
 
+    CREATE TABLE unix.disk (
+      disk RECORD (
+        filesystem STRING,
+        mount_point STRING,
+        total UINT64,
+        available UINT64,
+        used UINT64,
+        capacity UINT32,
+        iused UINT64,
+        ifree UINT64
+      )
+    )
+
 ###unix.processes
 <table>
   <tbody>
     <tr>
       <td>process.pid</td>
+      <td>Integer</td>
       <td>The process ID<td>
     </tr>
     <tr>
       <td>process.name</td>
+      <td>String</td>
       <td>The filename of the executable<td>
     </tr>
     <tr>
       <td>process.state</td>
+      <td>String</td>
       <td>The process state<td>
     </tr>
     <tr>
       <td>process.ppid</td>
+      <td>Integer</td>
       <td>The parent PID of the process<td>
     </tr>
     <tr>
       <td>process.pgrp</td>
+      <td>Integer</td>
       <td>The group ID of the process<td>
     </tr>
     <tr>
-      <td>process.ppid</td>
-      <td>The PID of the parent of the process<td>
-    </tr>
-    <tr>
       <td>process.utime</td>
-      <td>The time, measured in clock ticks, spent the process spent in user mode<td>
+      <td>Integer</td>
+      <td>The time, measured in clock ticks, the process spent in user mode<td>
     </tr>
     <tr>
       <td>process.stime</td>
-      <td>The time, measured in clock ticks, spent the process spent in kernel mode<td>
+      <td>Integer</td>
+      <td>The time, measured in clock ticks, the process spent in kernel mode<td>
     </tr>
     <tr>
       <td>process.nice</td>
+      <td>Double</td>
       <td>The process nice level (-20 - 19)<td>
     </tr>
     <tr>
       <td>process.starttime</td>
+      <td>Integer</td>
       <td>The time the process started after system boot<td>
     </tr>
     <tr>
       <td>process.vsize</td>
+      <td>Integer</td>
       <td>The virtual memory size in bytes<td>
     </tr>
   </tbody>
 </table>
 
+
+    CREATE TABLE unix.process (
+      process RECORD (
+        pid UINT64,
+        name STRING,
+        state STRING,
+        ppid UINT64,
+        pgrp UINT64,
+        utime UINT64,
+        stime UINT64,
+        nice DOUBLE,
+        starttime UINT64,
+        vsize UINT64
+      )
+    )
 
