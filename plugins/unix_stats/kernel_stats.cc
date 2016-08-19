@@ -160,16 +160,15 @@ bool getKernelInfo(KernelInfo kernel_info) {
 
 std::string toJSON(KernelInfo kernel_info) {
   std::string json = StringUtil::format(R"({
-      "kernel": {
-        "uptime": $0,
-        "load_avg": {
-          "min1": $1,
-          "min5": $2,
-          "min15": $3
-        },
-        "version": "$4",
-        "arguments": "$5"
-      }})",
+      "uptime": $0,
+      "load_avg": {
+        "min1": $1,
+        "min5": $2,
+        "min15": $3
+      },
+      "version": "$4",
+      "arguments": "$5"
+      })",
       kernel_info.uptime,
       kernel_info.load_avg.min1,
       kernel_info.load_avg.min5,

@@ -99,22 +99,25 @@ bool getDiskInfo(std::vector<DiskInfo> disk_info) {
 
 std::string toJSON(std::vector<DiskInfo> disk_info) {
   std::string json;
-  json.append(R"([)");
+  json.append(R"({disk: )");
 
   for (size_t i = 0; i < disk_info.size(); ++i) {
     if (i > 0) {
       json.append(",");
     }
 
-    json.append(StringUtil::format(R"({
-      "disk": {
-        "total": $0,
-        "available": $1,
-        "used": $2,
-        "capacity": $3,
-        "ifree": $4,
-        "iused": $5
-      }})",
+    json.append(StringUtil::format(R"([
+        "filesystem": $0,
+        "mount_point": $1,
+        "total": $2,
+        "available": $3,
+        "used": $4,
+        "capacity": $5,
+        "ifree": $6,
+        "iused": $7
+      ])",
+      disk_info[i].filesystem,
+      disk_info[i].mount_point,
       disk_info[i].total,
       disk_info[i].available,
       disk_info[i].used,
@@ -124,7 +127,7 @@ std::string toJSON(std::vector<DiskInfo> disk_info) {
     ));
   }
 
-  json.append("]");
+  json.append("}");
   return json;
 }
 

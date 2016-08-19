@@ -174,7 +174,7 @@ bool getProcessInfo(std::vector<ProcessInfo> process_info) {
 }
 
 std::string toJSON(std::vector<ProcessInfo> process_list) {
-  std::string json = "[";
+  std::string json = "{process: ";
 
   for (size_t i = 0; i < process_list.size(); ++i) {
     if (i > 0) {
@@ -182,8 +182,7 @@ std::string toJSON(std::vector<ProcessInfo> process_list) {
     }
 
 
-    json.append(StringUtil::format(R"({
-      "process": {
+    json.append(StringUtil::format(R"([
         "pid": $0,
         "name": "$1",
         "state": "$2",
@@ -194,7 +193,7 @@ std::string toJSON(std::vector<ProcessInfo> process_list) {
         "nice": $7,
         "starttime": $8,
         "vsize": $9,
-      }})",
+      ])",
       process_list[i].pid,
       process_list[i].name,
       process_list[i].state,
@@ -207,7 +206,7 @@ std::string toJSON(std::vector<ProcessInfo> process_list) {
       process_list[i].vsize));
   }
 
-  json.append("]");
+  json.append("}");
 
   return json;
 }
