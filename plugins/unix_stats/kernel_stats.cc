@@ -23,7 +23,6 @@
  * code of your own applications
  */
 #include "kernel_stats.h"
-#include "util/time.h"
 #include "util/stringutil.h"
 
 #if __linux__
@@ -32,6 +31,7 @@
 #endif
 
 #if __APPLE__
+#include "util/time.h"
 #include <sys/sysctl.h>
 #endif
 
