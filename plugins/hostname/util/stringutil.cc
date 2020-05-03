@@ -1,1 +1,0 @@
-../../../src/evcollect/util/stringutil.cc
