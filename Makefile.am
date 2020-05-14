@@ -7,7 +7,8 @@ SUBDIRS = \
     . \
     src/evcollect \
     plugins/eventql \
-    plugins/hostname
+    plugins/hostname \
+    plugins/unix_stats
 
 EXTRA_DIST =                             \
   doc                                    \

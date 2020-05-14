@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <string.h>
 #include <iostream>
+#include <mutex>
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif

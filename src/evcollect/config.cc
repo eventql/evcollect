@@ -53,6 +53,7 @@ ReturnCode loadConfig(
     const std::string& config_file_path,
     ProcessConfig* conf) {
   conf->load_plugins.push_back("./plugins/hostname/.libs/plugin_hostname.so");
+  conf->load_plugins.push_back("./plugins/unix_stats/.libs/plugin_unix_stats.so");
   conf->load_plugins.push_back("./plugins/eventql/.libs/plugin_eventql.so");
 
   {
@@ -62,10 +63,19 @@ ReturnCode loadConfig(
     b.event_name = "sys.alive";
     b.interval_micros = 1000000;
 
-    // XXX: source plugin hostname
-    b.sources.emplace_back();
-    auto& s = b.sources.back();
-    s.plugin_name = "hostname";
+    {
+      // XXX: source plugin hostname
+      b.sources.emplace_back();
+      auto& s = b.sources.back();
+      s.plugin_name = "hostname";
+    }
+
+    {
+      // XXX: source plugin unix_stats
+      b.sources.emplace_back();
+      auto& s = b.sources.back();
+      s.plugin_name = "unix.stats";
+    }
   }
 
   {
@@ -114,6 +124,15 @@ ReturnCode loadConfig(
             std::vector<std::string> { "sys.alive", "test/sys.alive.rollup" }));
   }
 
+  {
+    conf->event_bindings.emplace_back();
+    auto& b = conf->event_bindings.back();
+    b.event_name = "sys.unix";
+    b.interval_micros = 1000000;
+    b.sources.emplace_back();
+    auto& s = b.sources.back();
+    s.plugin_name = "unix.stats";
+  }
   return ReturnCode::success();
 }
 

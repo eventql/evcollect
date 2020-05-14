@@ -1,0 +1,32 @@
+MAINTAINERCLEANFILES = Makefile.in
+
+AM_CXXFLAGS = -std=c++0x -Wall -Wextra -Wdelete-non-virtual-dtor -g -fvisibility=hidden -I$(top_srcdir)/src
+AM_CFLAGS = -std=c11 -Wall -pedantic -g
+AM_LDFLAGS = -fvisibility=hidden -module -avoid-version -shared -export-dynamic -static-libstdc++ -static-libgcc -rpath $(libdir)
+
+noinst_LTLIBRARIES = plugin_unix_stats.la
+
+plugin_unix_stats_la_SOURCES = \
+    util/stringutil.cc \
+    util/stringutil.h \
+    util/stringutil_impl.h \
+    util/time.cc \
+    util/time.h \
+    util/time_impl.h \
+    disk_stats.h \
+    disk_stats.cc \
+    kernel_stats.h \
+    kernel_stats.cc \
+    process_stats.h \
+    process_stats.cc \
+    unix_stats_plugin.cc
+
+PLUGINDIR=$(DESTDIR)$(libdir)/evcollect/plugins
+
+install-data-hook: $(noinst_LTLIBRARIES)
+	@for soname in `echo | $(EGREP) "^dlname=" $^ | $(SED) -e "s|^dlname='\(.*\)'|\1|"`; do  \
+		mkdir -p ${PLUGINDIR};                                                                 \
+		echo Installing $$soname to ${PLUGINDIR};                                              \
+		cp $(abs_builddir)/.libs/$$soname ${PLUGINDIR};                                        \
+	done
+
